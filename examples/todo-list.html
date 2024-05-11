@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/assets/icons/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/assets/icons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/assets/icons/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/assets/icons/site.webmanifest" />
+    <link
+      rel="mask-icon"
+      href="/assets/icons/safari-pinned-tab.svg"
+      color="#4f46e5"
+    />
+    <link rel="shortcut icon" href="/assets/icons/favicon.ico" />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta
+      name="msapplication-config"
+      content="/assets/icons/browserconfig.xml"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AlphiJS - Todo List Example</title>
+    <link rel="stylesheet" href="../style.css" />
+    <style>
+      [v-cloak="hidden"] {
+        display: none;
+      }
+      [v-cloak="invisible"] {
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="max-w-md my-8 mx-auto">
+      <!-- vue app -->
+      <div id="app" v-scope="{}" v-on:vue:mounted="mounted">
+        <section class="todoapp">
+          <header class="mb-6 text-center">
+            <a href="/">
+              <img
+                class="mx-auto mb-4"
+                src="../assets/alphi-headshot.png"
+                alt="Alphi logo"
+                width="92px"
+              />
+            </a>
+            <div class="mb-6 prose">
+              <h1>Todo List Example</h1>
+            </div>
+
+            <div class="inline-block">
+              <div class="tabs tabs-boxed mb-2">
+                <a
+                  v-on:click="store.visibility = 'all'"
+                  :class="['tab', { 'tab-active': store.visibility === 'all' }]"
+                  >All</a
+                >
+                <a
+                  v-on:click="store.visibility = 'active'"
+                  :class="['tab', { 'tab-active': store.visibility === 'active' }]"
+                  >Active</a
+                >
+                <a
+                  v-on:click="store.visibility = 'completed'"
+                  :class="['tab', { 'tab-active': store.visibility === 'completed' }]"
+                  >Completed</a
+                >
+              </div>
+            </div>
+          </header>
+
+          <section class="main">
+            <!-- WebflowFormComponent -->
+            <div
+              v-scope="WebflowFormComponent({ fields: store.fields, el: $el, onSuccess: addTodo})"
+              v-on:vue:mounted="mounted($el)"
+              class="mb-6"
+            >
+              <form
+                v-on:submit="submit"
+                action="https://jsonplaceholder.typicode.com/users/1/todos"
+              >
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  v-model="store.fields.title"
+                  placeholder="Add new todo"
+                  class="input input-bordered input-primary w-full shadow-xl"
+                />
+              </form>
+            </div>
+
+            <!-- list -->
+            <div class="card bg-base-100 shadow-xl">
+              <div class="card-body p-0">
+                <div class="overflow-x-auto w-full">
+                  <table class="table w-full">
+                    <!-- head -->
+                    <thead>
+                      <tr>
+                        <th>
+                          <label>
+                            <input
+                              id="toggle-all"
+                              class="checkbox checkbox-primary"
+                              type="checkbox"
+                              v-on:change="markAll($event.target.checked)"
+                            />
+                          </label>
+                        </th>
+                        <th class="w-full">Task</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- row template -->
+                      <tr
+                        v-for="(todo, index) in filteredTodos"
+                        :key="todo.id"
+                        v-cloak="hidden"
+                      >
+                        <th>
+                          <label>
+                            <input
+                              type="checkbox"
+                              class="checkbox checkbox-primary"
+                              v-model="todo.completed"
+                              v-on:change="updateTodo(todo)"
+                            />
+                          </label>
+                        </th>
+                        <td>{{ todo.title }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <!-- loading -->
+                  <div v-show="isFetching" class="p-4 text-center">
+                    <span> Loading </span>
+                  </div>
+
+                  <!-- no results -->
+                  <div
+                    v-show="!filteredTodos.length && isIdle"
+                    class="p-4 text-center"
+                    v-cloak="hidden"
+                  >
+                    <span> No todos </span>
+                  </div>
+
+                  <!-- error -->
+                  <div
+                    v-show="isError"
+                    class="p-4 text-center"
+                    v-cloak="hidden"
+                  >
+                    <span> An error occurred. </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 text-center">
+              <span v-cloak="hidden">
+                {{ remaining }} active {{ pluralize }} remaining
+              </span>
+            </div>
+          </section>
+        </section>
+
+        <!-- debug store -->
+        <!-- <pre>
+          {{ store }}
+        </pre> -->
+      </div>
+    </div>
+
+    <!-- import the javascript and mount the app -->
+    <script type="module">
+      import { app } from "../src/pages/index.js";
+      app.mount("#app");
+    </script>
+  </body>
+</html>
