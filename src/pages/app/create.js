@@ -1180,7 +1180,7 @@ const generateCreativePrompt = async () => {
 
   console.log("about to api call for concept");
   const response = await fetch(
-    "https://dev.api-server.io/run/v1/645a5a18ac05f887e8ac410f",
+    "https://live.api-server.io/run/v1/645a5a18ac05f887e8ac410f",
     {
       method: "POST",
       headers: {
@@ -1401,7 +1401,7 @@ const generateScript = async () => {
   store.isInsightsResearching = false;
   console.log("Checking -> about to run endpoint for script writer:");
   const response = await fetch(
-    "https://dev.api-server.io/run/v1/646ce4aeb0c1d0bf94ad07cc",
+    "https://live.api-server.io/run/v1/646ce4aeb0c1d0bf94ad07cc",
     {
       method: "POST",
       headers: {
