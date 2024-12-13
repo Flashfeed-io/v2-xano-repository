@@ -19,11 +19,17 @@ const quillOptions = {
   // placeholder: 'This is a placeholder', // You can set a default or leave this out
 };
 
-MemberStack.onReady.then(function (member) {
-  console.log("Checking -> :ms on ready member object", member);
-  store.membership_id = member.membership.id;
-  store.member_id = member.id;
-  store.console.log("Checking -> : vue ms test", store.member_id);
+const memberStack = window.$memberstackDom;
+
+memberStack.getCurrentMember().then(({ data: member }) => {
+  if (member) {
+    console.log("Checking -> :ms on ready member object", member);
+    store.membership_id = member.membership.id;
+    store.member_id = member.id;
+    store.console.log("Checking -> : vue ms test", store.member_id);
+  } else {
+    console.log("No member is currently logged in.");
+  }
 });
 console.log("Checking -> : 2.0");
 
@@ -34,7 +40,7 @@ const getMemberData = async () => {
     {
       method: "GET",
       headers: {
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
     }
   ).catch((error) => {
@@ -552,7 +558,7 @@ const store = reactive({
   fields: {
     isWriterValidationBar: 0,
     chosenPremise: "",
-    insightsTab: "Premises",
+    insightsTab: "Optimize",
     jsonInsights: "",
     memberstack_id: "",
     workspace: "Private",
@@ -628,7 +634,7 @@ async function userAnalytics(
       method: "PUT",
       headers: {
         "Content-Type": "application/json", // This line is important
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
       body: JSON.stringify({
         ai_tokens: tokens,
@@ -778,7 +784,7 @@ const analyzeVideo = async (event) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json", // This line is important
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
       body: JSON.stringify({
         inputVideoFile: store.fields.videoFile[0].url,
@@ -1184,7 +1190,7 @@ const generateCreativePrompt = async () => {
     {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
       body: JSON.stringify({
         location: store.fields.location,
@@ -1260,7 +1266,7 @@ const generateCreativePromptRewrite = async () => {
     {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
       body: JSON.stringify({
         location: store.fields.location,
@@ -1405,7 +1411,7 @@ const generateScript = async () => {
     {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
       body: JSON.stringify({
         location: store.fields.location,
@@ -1483,7 +1489,7 @@ const generateGearAndLegal = async () => {
     {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + MemberStack.getToken(),
+        Authorization: "Bearer " + memberStack.getMemberCookie(),
       },
       body: JSON.stringify({
         location: store.fields.location,

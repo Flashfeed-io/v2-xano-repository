@@ -46,6 +46,8 @@ export function WebflowFormComponent(props) {
       // prevent the default event
       event.preventDefault();
 
+      const memberStack = window.$memberstackDom;
+
       // set the status to loading
       this.status = statusEnum.loading;
       console.log("Checking -> before response:");
@@ -55,7 +57,7 @@ export function WebflowFormComponent(props) {
         method: "POST",
         body: props.fields,
         headers: {
-          Authorization: MemberStack.getToken(),
+          Authorization: memberStack.getMemberCookie(),
         },
       }).catch((error) => {
         console.log("Checking -> inside catch");

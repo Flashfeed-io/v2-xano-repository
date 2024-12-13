@@ -1,23 +1,29 @@
 import { createApp, reactive } from "petite-vue";
 import { WebflowFormComponent } from "../../components/WebflowFormComponent";
-import Quill from "quill";
-
-const quillOptions = { theme: "snow" };
-
-const editorDescription = new Quill("#description", quillOptions);
 
 const store = reactive({
   thumbnailPreviewUrl: "",
   fields: {
     title: "",
-    main_thumbnail: "",
+    main_thumbnail: [],
     ad_purpose: "recSL0G465hfpRlAp",
     raw_video_link: "",
+    file: [],
+    photo_gallery: [],
   },
 });
 
+let previousStoreState = JSON.stringify(store);
 
+const logStoreChanges = () => {
+  const currentStoreState = JSON.stringify(store);
+  if (currentStoreState !== previousStoreState) {
+    console.log("Store changed:", JSON.stringify(store, null, 2));
+    previousStoreState = currentStoreState;
+  }
+};
 
+setInterval(logStoreChanges, 500); // Check for changes every 500 milliseconds
 
 const mounted = async () => {
   const thumbnailWidget = window.uploadcare.Widget(
@@ -26,9 +32,7 @@ const mounted = async () => {
   thumbnailWidget.onChange((file) => {
     if (file) {
       file.done((info) => {
-        // Reset the field as it only supports one image
-        store.fields.main_thumbnail = [];
-        store.fields.main_thumbnail.push({ url: info.cdnUrl });
+        store.fields.main_thumbnail = [{ url: info.cdnUrl }];
         store.thumbnailPreviewUrl = info.cdnUrl;
       });
     }
@@ -45,9 +49,7 @@ const mounted = async () => {
     fileWidget.onChange((file) => {
       if (file) {
         file.done((info) => {
-          // Reset the field as it only supports one image
-          store.fields.file = [];
-          store.fields.file.push({ url: info.cdnUrl });
+          store.fields.file = [{ url: info.cdnUrl }];
         });
       }
     });
@@ -61,22 +63,14 @@ const mounted = async () => {
     const photoGalleryWidget = window.uploadcare.MultipleWidget(
       '[role=uploadcare-uploader][upload-field-name="gallery"]'
     );
-    // listen to the "change" event
     photoGalleryWidget.onChange(function (group) {
-      // get a list of file instances
       group.files().forEach((file) => {
-        // once each file is uploaded, get its CDN URL from the fileInfo object
         file.done((fileInfo) => {
           store.fields.photo_gallery.push({ url: fileInfo.cdnUrl });
         });
       });
     });
   }
-
-  editorDescription.on("text-change", function (delta, oldDelta, source) {
-    store.fields.description =
-      editorDescription.container.children[0].innerHTML;
-  });
 
   window.console.log("Mounted");
 };
