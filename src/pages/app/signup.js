@@ -1,31 +1,14 @@
 import { createApp, reactive } from "https://unpkg.com/petite-vue@0.4.1/dist/petite-vue.es.js";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
-
-// Add Toastify CSS and JS dynamically
-const toastifyCss = document.createElement('link');
-toastifyCss.rel = 'stylesheet';
-toastifyCss.href = 'https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css';
-document.head.appendChild(toastifyCss);
-
-// Load Toastify JS
-let Toastify;
-const loadToastify = async () => {
-  if (!window.Toastify) {
-    await import('https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.js').then(module => {
-      Toastify = window.Toastify;
-    });
-  } else {
-    Toastify = window.Toastify;
-  }
-};
-loadToastify();
+import { toast } from "/src/utils/toastManager.js";
 
 // A reactive store for user data
 const store = reactive({
   user: {},
   token: localStorage.getItem('xanoToken') || '',
   fields: {
+    member_id: "",
     email: "",
     password: ""
   },
@@ -35,19 +18,11 @@ const store = reactive({
 });
 
 const showToast = (message, isError = false) => {
-  if (!window.Toastify) {
-    console.error('Toastify not loaded yet');
-    return;
+  if (isError) {
+    toast.error(message);
+  } else {
+    toast.success(message);
   }
-  window.Toastify({
-    text: message,
-    duration: 3000,
-    gravity: "top",
-    position: "right",
-    style: {
-      background: isError ? "#ff5555" : "#4CAF50",
-    },
-  }).showToast();
 };
 
 const getUserData = async () => {
@@ -78,26 +53,22 @@ const app = createApp({
   store,
   WebflowFormComponent: (props) => WebflowFormComponent({ 
     ...props, 
-    requiresAuth: false, 
-    store: store,
     $scope: {
-      showSuccessToast: (message) => showToast(message, false),
-      showErrorToast: (message) => showToast(message, true)
+      showSuccessToast: (message) => toast.success(message),
+      showErrorToast: (message) => toast.error(message)
     }
   }),
   getUserData,
   debugStore: () => debugStore.logStore(),
-  showSuccessToast: (message) => showToast(message, false),
-  showErrorToast: (message) => showToast(message, true),
-  testToast: () => {
-    showToast('Test toast message', false);
-  }
+  showSuccessToast: (message) => toast.success(message),
+  showErrorToast: (message) => toast.error(message),
+  testToast: () => toast.success('Test toast message')
 });
 
 // Add global test functions
 window.testToast = {
-  success: (message = "Success toast test!") => showToast(message, false),
-  error: (message = "Error toast test!") => showToast(message, true)
+  success: (message = "Success toast test!") => toast.success(message),
+  error: (message = "Error toast test!") => toast.error(message)
 };
 
 export { app };

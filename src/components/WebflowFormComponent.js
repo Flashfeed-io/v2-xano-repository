@@ -62,6 +62,9 @@ export function WebflowFormComponent(props = {}) {
       event.stopPropagation();
       this.status = statusEnum.loading;
       
+      // Add loading class
+      $("[cc_data='submit-validation']").addClass("cc_request-loading");
+      
       try {
         console.log("Submitting to:", this.actionUrl, "with fields:", props.fields);
         
@@ -126,6 +129,14 @@ export function WebflowFormComponent(props = {}) {
         this.status = statusEnum.error;
         console.log('Setting status to error');
         this.watchStatus(this.status);
+        
+        // Remove loading class on error
+        $("[cc_data='submit-validation']").removeClass("cc_request-loading");
+      } finally {
+        // Remove loading class after completion (success or error)
+        if (this.status !== statusEnum.error) {
+          $("[cc_data='submit-validation']").removeClass("cc_request-loading");
+        }
       }
     },
   };
