@@ -25,23 +25,35 @@ const initToastify = async () => {
 // Toast configuration defaults
 const defaultConfig = {
   duration: 4000,
-  gravity: "top",
-  position: "right",
+  gravity: "bottom",
+  position: "center",
   stopOnFocus: true,
-  className: "sonner-toast",
+  className: "cc_sonner-toast",
+  escapeMarkup: false,
+  onClick: function() { 
+    this.hideToast();
+  },
   style: {
     background: "white",
-    color: "#4A4A4A",
-    padding: "20px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-    fontSize: "16px",
-    fontWeight: "300",
+    color: "#222",
+    padding: "16px",
+    borderRadius: "16px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.04)",
+    fontSize: "14px",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    margin: "8px",
+    minWidth: "320px",
     display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: "8px"
-  }
+    alignItems: "center",
+    gap: "8px",
+    cursor: "pointer"
+  },
+  offset: {
+    x: 0,
+    y: 16
+  },
+  oldestFirst: true,
+  destination: "body"
 };
 
 // Toast types with their specific configurations
@@ -49,25 +61,35 @@ const toastTypes = {
   success: {
     style: {
       background: "white",
-      color: "#4A4A4A"
+      color: "#222",
+      borderLeft: "4px solid #10B981"
     }
   },
   error: {
     style: {
-      background: "white",
-      color: "#4A4A4A"
-    }
+      background: "#FEF2F2",
+      color: "#DC2626",
+      padding: "16px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px"
+    },
+    text: (message) => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM8.8 12H7.2V10.4H8.8V12ZM8.8 8.8H7.2V4H8.8V8.8Z" fill="#DC2626"/>
+    </svg>${message}`
   },
   info: {
     style: {
       background: "white",
-      color: "#4A4A4A"
+      color: "#222",
+      borderLeft: "4px solid #3B82F6"
     }
   },
   warning: {
     style: {
       background: "white",
-      color: "#4A4A4A"
+      color: "#222",
+      borderLeft: "4px solid #F59E0B"
     }
   }
 };
@@ -127,5 +149,5 @@ const toast = new ToastManager();
 // Export for use in other files
 export { toast };
 
-// Add to window for global access if needed (optional)
+// Add to window for global access
 window.toast = toast;
