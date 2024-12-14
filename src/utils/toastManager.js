@@ -25,28 +25,13 @@ const initToastify = async () => {
 // Toast configuration defaults
 const defaultConfig = {
   duration: 4000,
-  gravity: "bottom",
+  gravity: "top",
   position: "center",
   stopOnFocus: true,
   className: "cc_sonner-toast",
   escapeMarkup: false,
   onClick: function() { 
     this.hideToast();
-  },
-  style: {
-    background: "white",
-    color: "#222",
-    padding: "16px",
-    borderRadius: "16px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.04)",
-    fontSize: "14px",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    margin: "8px",
-    minWidth: "320px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    cursor: "pointer"
   },
   offset: {
     x: 0,
@@ -60,10 +45,20 @@ const defaultConfig = {
 const toastTypes = {
   success: {
     style: {
-      background: "white",
-      color: "#222",
-      borderLeft: "4px solid #10B981"
-    }
+      background: "#F0FDF4",
+      color: "#16A34A",
+      padding: "16px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(22, 163, 74, 0.08)",
+      border: "1px solid rgba(22, 163, 74, 0.1)",
+      cursor: "pointer"
+    },
+    text: (message) => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM6.4 12L2.4 8L3.528 6.872L6.4 9.736L12.472 3.664L13.6 4.8L6.4 12Z" fill="#16A34A"/>
+    </svg>${message}`
   },
   error: {
     style: {
@@ -72,7 +67,11 @@ const toastTypes = {
       padding: "16px",
       display: "flex",
       alignItems: "center",
-      gap: "8px"
+      gap: "8px",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(220, 38, 38, 0.06)",
+      border: "1px solid rgba(220, 38, 38, 0.1)",
+      cursor: "pointer"
     },
     text: (message) => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM8.8 12H7.2V10.4H8.8V12ZM8.8 8.8H7.2V4H8.8V8.8Z" fill="#DC2626"/>
@@ -80,17 +79,37 @@ const toastTypes = {
   },
   info: {
     style: {
-      background: "white",
-      color: "#222",
-      borderLeft: "4px solid #3B82F6"
-    }
+      background: "#FFFFFF",
+      color: "#6B7280",
+      padding: "16px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.04)",
+      border: "1px solid rgba(0, 0, 0, 0.05)",
+      cursor: "pointer"
+    },
+    text: (message) => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM8.8 12H7.2V6.4H8.8V12ZM8.8 4.8H7.2V3.2H8.8V4.8Z" fill="#6B7280"/>
+    </svg>${message}`
   },
   warning: {
     style: {
-      background: "white",
-      color: "#222",
-      borderLeft: "4px solid #F59E0B"
-    }
+      background: "#FFFFFF",
+      color: "#F59E0B",
+      padding: "16px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      borderRadius: "12px",
+      boxShadow: "0 4px 12px rgba(245, 158, 11, 0.06)",
+      border: "1px solid rgba(245, 158, 11, 0.1)",
+      cursor: "pointer"
+    },
+    text: (message) => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 0C3.584 0 0 3.584 0 8C0 12.416 3.584 16 8 16C12.416 16 16 12.416 16 8C16 3.584 12.416 0 8 0ZM8.8 12H7.2V6.4H8.8V12ZM8.8 4.8H7.2V3.2H8.8V4.8Z" fill="#F59E0B"/>
+    </svg>${message}`
   }
 };
 
@@ -119,7 +138,7 @@ class ToastManager {
       ...defaultConfig,
       ...toastTypes[type],
       ...customConfig,
-      text: message
+      text: toastTypes[type].text(message)
     };
 
     window.Toastify(config).showToast();
