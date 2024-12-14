@@ -1,6 +1,7 @@
 import { createApp, reactive } from "petite-vue";
 import { WebflowFormComponent } from "../../components/WebflowFormComponent";
 import { $fetch } from "ohmyfetch";
+import { StoreDebugger } from "../../utils/storeDebugger";
 
 // A reactive store for user data
 const store = reactive({
@@ -32,10 +33,13 @@ const getUserData = async () => {
   }
 };
 
+const debugStore = StoreDebugger.init(store);
+
 const app = createApp({
   store,
-  WebflowFormComponent,
-  getUserData
+  WebflowFormComponent: (props) => WebflowFormComponent({ ...props, requiresAuth: false }),
+  getUserData,
+  debugStore: () => debugStore.logStore()
 });
 
 export { app };
