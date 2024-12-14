@@ -1,5 +1,3 @@
-import { $fetch } from "ohmyfetch";
-
 const statusEnum = Object.freeze({
   idle: 0,
   error: 1,
@@ -17,14 +15,10 @@ export function WebflowFormComponent(props = {}) {
 
     // lifecycle hooks
     mounted(el) {
-      // log to the console
       window.console.log("mounted: WebflowFormComponent");
-
-      // get the form element
       const form = el.querySelector("form");
 
       if (form) {
-        // set the action and redirect urls
         this.actionUrl = form.getAttribute("action");
         this.redirectUrl = form.getAttribute("data-redirect");
       } else {
@@ -46,21 +40,34 @@ export function WebflowFormComponent(props = {}) {
       return this.status === statusEnum.loading;
     },
 
+    // Status change watcher
+    watchStatus(newStatus) {
+      console.log('watchStatus called with status:', newStatus);
+      console.log('Current error message:', this.errorMessage);
+      console.log('Props available:', props);
+      console.log('Scope available:', props?.$scope);
+      
+      if (newStatus === statusEnum.error && props?.$scope?.showErrorToast) {
+        console.log('Attempting to show error toast with message:', this.errorMessage);
+        props.$scope.showErrorToast(this.errorMessage || "An error occurred");
+      } else if (newStatus === statusEnum.success && props?.$scope?.showSuccessToast) {
+        console.log('Attempting to show success toast');
+        props.$scope.showSuccessToast("Successfully submitted!");
+      }
+    },
+
     // methods
     async submit(event) {
-      // prevent the default event
       event.preventDefault();
-
-      // set the status to loading
+      event.stopPropagation();
       this.status = statusEnum.loading;
-      console.log("Submitting form...");
-      $("[cc_data='submit-validation']").addClass("cc_request-loading");
-
+      
       try {
         console.log("Submitting to:", this.actionUrl, "with fields:", props.fields);
         
-        // Prepare headers based on whether this is an authenticated route
-        const headers = {};
+        const headers = {
+          'Content-Type': 'application/json'
+        };
         if (props.requiresAuth !== false) {
           const token = localStorage.getItem('xanoToken');
           if (token) {
@@ -68,45 +75,57 @@ export function WebflowFormComponent(props = {}) {
           }
         }
 
-        // post the form data to the api
-        const response = await $fetch(this.actionUrl, {
+        const response = await fetch(this.actionUrl, {
           method: "POST",
-          body: props.fields,
-          headers
+          headers,
+          body: JSON.stringify(props.fields)
         });
 
-        console.log("Form submission successful:", response);
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (!response.ok) {
+          console.log('Response not OK, status:', response.status);
+          console.log('Error data:', data);
+          // Handle error responses (400, 401, etc.)
+          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+        
+        console.log("Form submission successful:", data);
 
-        // If this is a login/signup endpoint and we got a token back, store it
-        if (response.authToken) {
-          localStorage.setItem('xanoToken', response.authToken);
-          console.log('Stored Xano auth token');
+        if (data.authToken) {
+          localStorage.setItem('xanoToken', data.authToken);
+          if (props.store) {
+            props.store.token = data.authToken;
+            console.log('Updated token in store');
+          }
         }
 
-        // redirect on success if the redirectUrl has been set
+        this.status = statusEnum.success;
+        console.log('Setting status to success');
+        this.watchStatus(this.status);
+
         if (this.redirectUrl) {
           window.location.assign(this.redirectUrl);
         }
 
-        // call the on success callback
         if (props?.onSuccess && typeof props.onSuccess === "function") {
-          props.onSuccess(response);
+          props.onSuccess(data);
         }
 
-        // update the status
-        this.status = statusEnum.success;
-        $("[cc_data='submit-validation']").removeClass("cc_request-loading");
       } catch (error) {
         console.log("Form submission error:", error);
-        this.status = statusEnum.error;
-        $("[cc_data='submit-validation']").removeClass("cc_request-loading");
+        console.log("Error name:", error.name);
+        console.log("Error message:", error.message);
+        console.log("Error stack:", error.stack);
         
-        // Store the error message if available
-        if (error.response?.data) {
-          this.errorMessage = error.response.data.message;
-        } else {
-          this.errorMessage = "An unexpected error occurred. Please try again.";
-        }
+        // Set error message from response if available
+        this.errorMessage = error.message || "An unexpected error occurred. Please try again.";
+        console.log('Setting error message to:', this.errorMessage);
+        
+        this.status = statusEnum.error;
+        console.log('Setting status to error');
+        this.watchStatus(this.status);
       }
     },
   };
