@@ -31,13 +31,15 @@ const defaultConfig = {
   className: "sonner-toast",
   style: {
     background: "white",
-    color: "rgb(51, 51, 51)",
-    padding: "12px",
-    borderRadius: "6px",
+    color: "#4A4A4A",
+    padding: "20px",
+    borderRadius: "12px",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-    fontSize: "13px",
+    fontSize: "16px",
+    fontWeight: "300",
     display: "flex",
-    alignItems: "center",
+    flexDirection: "column",
+    alignItems: "flex-start",
     gap: "8px"
   }
 };
@@ -46,26 +48,26 @@ const defaultConfig = {
 const toastTypes = {
   success: {
     style: {
-      background: "rgb(247, 247, 247)",
-      color: "rgb(51, 51, 51)"
+      background: "white",
+      color: "#4A4A4A"
     }
   },
   error: {
     style: {
-      background: "rgb(247, 247, 247)",
-      color: "rgb(51, 51, 51)"
+      background: "white",
+      color: "#4A4A4A"
     }
   },
   info: {
     style: {
-      background: "rgb(247, 247, 247)",
-      color: "rgb(51, 51, 51)"
+      background: "white",
+      color: "#4A4A4A"
     }
   },
   warning: {
     style: {
-      background: "rgb(247, 247, 247)",
-      color: "rgb(51, 51, 51)"
+      background: "white",
+      color: "#4A4A4A"
     }
   }
 };
