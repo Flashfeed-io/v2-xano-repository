@@ -2,7 +2,7 @@ import { createApp, reactive } from "petite-vue";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
-import { getUserData } from "/src/utils/userData.js";
+import { getUserData, logout } from "/src/utils/userData.js";
 
 
 /*--main code----------------------------------------------------------*/
@@ -40,6 +40,9 @@ const app = createApp({
   },
   async getUserData() {
     return getUserData(store);
+  },
+  logout() {
+    return logout(store);
   },
   debugStore
 });
