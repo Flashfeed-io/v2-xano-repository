@@ -1,51 +1,39 @@
-import { $fetch } from "ohmyfetch";
 import { createApp, reactive } from "petite-vue";
+import { StoreDebugger } from "/src/utils/storeDebugger.js";
+import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
+import { toast } from "/src/utils/toastManager.js";
+import { getUserData } from "/src/utils/userData.js";
 
+// Initialize toast
+await toast.init();
+
+// A reactive store for user data
 const store = reactive({
-  memberObject: {},
-  member_id: "",
-});
-
-MemberStack.onReady.then(function (member) {
-  store.member_id = member.id;
-  console.log("Checking -> : vue ms test", store.member_id);
-});
-
-const getMemberData = async () => {
-  console.log("Checking -> store.member_id", store.member_id);
-  const response = await fetch(
-    "https://x6c9-ohwk-nih4.n7d.xano.io/api:QLDf95Yy/user/" + store.member_id,
-    {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + MemberStack.getToken(),
-      },
-    }
-  ).catch((error) => {
-    throw new Error(error.message);
-  });
-
-  if (!response.ok) {
-    const message = `An error has occured: ${response.status}`;
-    throw new Error(message);
+  user: {},
+  token: localStorage.getItem('xanoToken') || '',
+  fields: {
+    member_id: "",
+    email: "",
+    password: ""
   }
+});
 
-  const data = await response.json();
-  console.log("Checking -> : data", data);
-  return data;
-};
-
-const mounted = async () => {
-  store.memberObject = await getMemberData();
-  console.log("Checking -> memberObject:", store.memberObject);
-  window.console.log("Mounted");
-};
+const debugStore = StoreDebugger.init(store);
 
 const app = createApp({
-  // exposed to all expressions
-  mounted,
   store,
-  getMemberData,
+  WebflowFormComponent(props) {
+    return WebflowFormComponent({
+      ...props,
+      store,
+      fields: store.fields,
+      requiresAuth: false
+    });
+  },
+  async getUserData() {
+    return getUserData(store);
+  },
+  debugStore
 });
 
 export { app };
