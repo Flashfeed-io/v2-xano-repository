@@ -27,7 +27,8 @@ const app = createApp({
       ...props,
       store,
       fields: store.fields,
-      requiresAuth: false
+      requiresAuth: false,
+      successMessage: "Successfully signed up! Welcome aboard!"
     });
   },
   async getUserData() {

@@ -62,7 +62,7 @@ export function WebflowFormComponent(props = {}) {
         toast.error(this.errorMessage || "An error occurred. Please contact support if this problem persists.");
       } else if (newStatus === statusEnum.success) {
         console.log('Attempting to show success toast');
-        toast.success("Success!");
+        toast.success(props.successMessage || "Success!");
       }
     },
 
