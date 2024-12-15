@@ -25,8 +25,8 @@ const initToastify = async () => {
 // Toast configuration defaults
 const defaultConfig = {
   duration: 3000,
-  gravity: "top",
-  position: "center",
+  gravity: "bottom",
+  position: "right",
   stopOnFocus: true,
   className: "cc_sonner-toast",
   escapeMarkup: false,

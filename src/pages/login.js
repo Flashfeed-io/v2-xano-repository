@@ -28,7 +28,7 @@ const app = createApp({
       store,
       fields: store.fields,
       requiresAuth: false,
-      successMessage: "Successfully signed up! Welcome aboard!"
+      successMessage: "Welcome to Flashfeed!"
     });
   },
   async getUserData() {

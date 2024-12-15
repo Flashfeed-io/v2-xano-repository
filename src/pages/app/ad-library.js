@@ -24,12 +24,12 @@ const store = reactive({
 window.addEventListener("DOMContentLoaded", () => {
   // establish connection to search index with application ID and public api key from algolia
   const searchClient = algoliasearch(
-    "6RJT8M6BD5",
-    "113ff52e9d3bd9f965ce3ba85217a2c2"
+    "JPENBJBFVG",
+    "e52c4e233b34d3a2adc1dea827d0a9cf"
   );
 
   const search = instantsearch({
-    indexName: "movies",
+    indexName: "movie",
     searchClient,
   });
 
@@ -173,7 +173,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   // hide loader in Webflow after initiating algolia
-  const loader = document.getElementById("cc_loader");
+  const loader = document.querySelector("[data-cc='loader']");
   loader.style.opacity = "0";
   setTimeout(() => {
     loader.style.display = "none";
