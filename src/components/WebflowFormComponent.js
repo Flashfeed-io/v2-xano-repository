@@ -1,3 +1,5 @@
+import { toast } from "/src/utils/toastManager.js";
+
 const statusEnum = Object.freeze({
   idle: 0,
   error: 1,
@@ -21,6 +23,9 @@ export function WebflowFormComponent(props = {}) {
       if (form) {
         this.actionUrl = form.getAttribute("action");
         this.redirectUrl = form.getAttribute("data-redirect");
+        
+        // Add submit event listener to the form
+        form.addEventListener("submit", (e) => this.submit(e));
       } else {
         throw Error("WebflowFormComponent requires a <form> element!");
       }
@@ -41,18 +46,23 @@ export function WebflowFormComponent(props = {}) {
     },
 
     // Status change watcher
-    watchStatus(newStatus) {
+    async watchStatus(newStatus) {
       console.log('watchStatus called with status:', newStatus);
       console.log('Current error message:', this.errorMessage);
-      console.log('Props available:', props);
-      console.log('Scope available:', props?.$scope);
       
-      if (newStatus === statusEnum.error && props?.$scope?.showErrorToast) {
+      // Update store status
+      if (props.store) {
+        props.store.isError = newStatus === statusEnum.error;
+        props.store.isSuccess = newStatus === statusEnum.success;
+        props.store.message = this.errorMessage || '';
+      }
+      
+      if (newStatus === statusEnum.error) {
         console.log('Attempting to show error toast with message:', this.errorMessage);
-        props.$scope.showErrorToast(this.errorMessage || "An error occurred");
-      } else if (newStatus === statusEnum.success && props?.$scope?.showSuccessToast) {
+        toast.error(this.errorMessage || "An error occurred");
+      } else if (newStatus === statusEnum.success) {
         console.log('Attempting to show success toast');
-        props.$scope.showSuccessToast("Successfully submitted!");
+        toast.success("Successfully submitted!");
       }
     },
 
@@ -60,10 +70,19 @@ export function WebflowFormComponent(props = {}) {
     async submit(event) {
       event.preventDefault();
       event.stopPropagation();
+      
+      // If already loading, don't submit again
+      if (this.status === statusEnum.loading) {
+        return;
+      }
+      
       this.status = statusEnum.loading;
       
       // Add loading class
-      $("[cc_data='submit-validation']").addClass("cc_request-loading");
+      const submitBtn = document.querySelector("[cc_data='submit-validation']");
+      if (submitBtn) {
+        submitBtn.classList.add("cc_request-loading");
+      }
       
       try {
         console.log("Submitting to:", this.actionUrl, "with fields:", props.fields);
@@ -90,7 +109,6 @@ export function WebflowFormComponent(props = {}) {
         if (!response.ok) {
           console.log('Response not OK, status:', response.status);
           console.log('Error data:', data);
-          // Handle error responses (400, 401, etc.)
           throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
         
@@ -106,7 +124,7 @@ export function WebflowFormComponent(props = {}) {
 
         this.status = statusEnum.success;
         console.log('Setting status to success');
-        this.watchStatus(this.status);
+        await this.watchStatus(this.status);
 
         if (this.redirectUrl) {
           window.location.assign(this.redirectUrl);
@@ -122,20 +140,20 @@ export function WebflowFormComponent(props = {}) {
         console.log("Error message:", error.message);
         console.log("Error stack:", error.stack);
         
-        // Set error message from response if available
         this.errorMessage = error.message || "An unexpected error occurred. Please try again.";
         console.log('Setting error message to:', this.errorMessage);
         
         this.status = statusEnum.error;
         console.log('Setting status to error');
-        this.watchStatus(this.status);
+        await this.watchStatus(this.status);
         
-        // Remove loading class on error
-        $("[cc_data='submit-validation']").removeClass("cc_request-loading");
+        if (submitBtn) {
+          submitBtn.classList.remove("cc_request-loading");
+        }
       } finally {
         // Remove loading class after completion (success or error)
-        if (this.status !== statusEnum.error) {
-          $("[cc_data='submit-validation']").removeClass("cc_request-loading");
+        if (this.status !== statusEnum.error && submitBtn) {
+          submitBtn.classList.remove("cc_request-loading");
         }
       }
     },

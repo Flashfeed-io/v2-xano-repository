@@ -24,21 +24,25 @@ const initToastify = async () => {
 
 // Toast configuration defaults
 const defaultConfig = {
-  duration: 4000,
+  duration: 3000,
   gravity: "top",
   position: "center",
   stopOnFocus: true,
   className: "cc_sonner-toast",
   escapeMarkup: false,
-  onClick: function() { 
-    this.hideToast();
+  onClick: () => {  // Use an arrow function
+    console.log("onClick context:", this); // Log the context of 'this'
+    if (toast.hideToast) {  // Access the toast instance directly
+        toast.hideToast();
+    } else {
+        console.error("hideToast is not a function");
+    }
   },
   offset: {
     x: 0,
     y: 16
   },
-  oldestFirst: true,
-  destination: "body"
+  oldestFirst: true
 };
 
 // Toast types with their specific configurations
@@ -117,6 +121,7 @@ const toastTypes = {
 class ToastManager {
   constructor() {
     this.initialized = false;
+    this.currentToast = null; // Store the current toast instance
   }
 
   async init() {
@@ -138,10 +143,24 @@ class ToastManager {
       ...defaultConfig,
       ...toastTypes[type],
       ...customConfig,
-      text: toastTypes[type].text(message)
+      text: toastTypes[type].text(message),
+      onClose: () => {
+        this.currentToast = null; // Clear the reference when toast is closed
+      }
     };
 
-    window.Toastify(config).showToast();
+    this.currentToast = window.Toastify(config).showToast(); // Store the toast instance
+  }
+
+  async hideToast() {
+    console.log("hideToast called"); // Log when hideToast is called
+    if (this.currentToast) {
+      console.log("Hiding toast:", this.currentToast); // Log the current toast instance
+      this.currentToast.hideToast(); // Call hideToast on the current instance
+      this.currentToast = null; // Clear the reference
+    } else {
+      console.log("No current toast to hide"); // Log if there is no toast to hide
+    }
   }
 
   // Convenience methods for different toast types
