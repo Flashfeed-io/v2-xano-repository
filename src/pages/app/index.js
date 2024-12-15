@@ -20,6 +20,11 @@ const store = reactive({
 
 const debugStore = StoreDebugger.init(store);
 
+// Fetch user data when the app starts
+if (store.token) {
+  await getUserData(store);
+}
+
 const app = createApp({
   store,
   WebflowFormComponent(props) {
@@ -27,7 +32,7 @@ const app = createApp({
       ...props,
       store,
       fields: store.fields,
-      requiresAuth: false
+      requiresAuth: true
     });
   },
   async getUserData() {
