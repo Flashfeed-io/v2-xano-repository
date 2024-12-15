@@ -59,10 +59,10 @@ export function WebflowFormComponent(props = {}) {
       
       if (newStatus === statusEnum.error) {
         console.log('Attempting to show error toast with message:', this.errorMessage);
-        toast.error(this.errorMessage || "An error occurred");
+        toast.error(this.errorMessage || "An error occurred. Please contact support if this problem persists.");
       } else if (newStatus === statusEnum.success) {
         console.log('Attempting to show success toast');
-        toast.success("Successfully submitted!");
+        toast.success("Success!");
       }
     },
 

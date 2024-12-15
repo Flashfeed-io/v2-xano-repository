@@ -1,54 +1,23 @@
-import { $fetch } from "ohmyfetch";
 import { createApp, reactive } from "petite-vue";
-import { WebflowFormComponent } from "../../components/WebflowFormComponent";
+import { StoreDebugger } from "/src/utils/storeDebugger.js";
+import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
+import { toast } from "/src/utils/toastManager.js";
+import { getUserData } from "/src/utils/userData.js";
 
+// Initialize toast
+await toast.init();
+
+// A reactive store for user data
 const store = reactive({
-  memberObject: {},
-  member_id: "1234",
-  filterTab: "Platform",
-});
-
-const memberStack = window.$memberstackDom;
-
-memberStack.getCurrentMember().then(({ data: member }) => {
-  if (member) {
-    console.log("Checking -> :ms on ready member object", member);
-    store.membership_id = member.membership.id;
-    store.member_id = member.id;
-    store.console.log("Checking -> : vue ms test", store.member_id);
-  } else {
-    console.log("No member is currently logged in.");
+  user: {},
+  token: localStorage.getItem('xanoToken') || '',
+  fields: {
+    member_id: "",
+    email: "",
+    password: ""
   }
 });
 
-const getMemberData = async () => {
-  console.log("Checking -> store.member_id", store.member_id);
-  const response = await fetch(
-    "https://x6c9-ohwk-nih4.n7d.xano.io/api:QLDf95Yy/user/" + store.member_id,
-    {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + memberStack.getMemberCookie(),
-      },
-    }
-  ).catch((error) => {
-    throw new Error(error.message);
-  });
-
-  if (!response.ok) {
-    const message = `An error has occured: ${response.status}`;
-    throw new Error(message);
-  }
-
-  const data = await response.json();
-  console.log("Checking -> : getMemberData", data);
-
-  store.memberObject = data;
-
-  console.log("Checking -> : getMemberData store", store.memberObject);
-
-  return data;
-};
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
 
@@ -303,18 +272,23 @@ window.addEventListener("DOMContentLoaded", () => {
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
 
-const mounted = async () => {
-  store.memberObject = await getMemberData();
-  console.log("Checking -> memberObject:", store.memberObject);
-  window.console.log("Mounted");
-};
+
+const debugStore = StoreDebugger.init(store);
 
 const app = createApp({
-  // exposed to all expressions
-  mounted,
   store,
-  getMemberData,
-  WebflowFormComponent,
+  WebflowFormComponent(props) {
+    return WebflowFormComponent({
+      ...props,
+      store,
+      fields: store.fields,
+      requiresAuth: false
+    });
+  },
+  async getUserData() {
+    return getUserData(store);
+  },
+  debugStore
 });
 
 export { app };
