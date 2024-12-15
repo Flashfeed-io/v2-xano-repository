@@ -19,3 +19,10 @@ export const getUserData = async (store) => {
     window.location.href = "/";
   }
 };
+
+export const logout = (store) => {
+  localStorage.removeItem('xanoToken');
+  store.token = '';
+  store.user = {};
+  window.location.href = "/";
+};

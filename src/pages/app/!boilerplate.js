@@ -4,10 +4,8 @@ import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
 import { getUserData } from "/src/utils/userData.js";
 
-// Initialize toast
-await toast.init();
 
-// A reactive store for user data
+/*--main code----------------------------------------------------------*/
 const store = reactive({
   user: {},
   token: localStorage.getItem('xanoToken') || '',
@@ -18,8 +16,18 @@ const store = reactive({
   }
 });
 
+
+
+/*--initializers----------------------------------------------------------*/
 const debugStore = StoreDebugger.init(store);
 
+if (store.token) {
+  await getUserData(store);
+}
+
+await toast.init();
+
+/*--mount----------------------------------------------------------*/
 const app = createApp({
   store,
   WebflowFormComponent(props) {
@@ -27,7 +35,7 @@ const app = createApp({
       ...props,
       store,
       fields: store.fields,
-      requiresAuth: false
+      requiresAuth: true
     });
   },
   async getUserData() {
