@@ -15,10 +15,7 @@ const store = reactive({
     member_id: "",
     email: "",
     password: ""
-  },
-  isError: false,
-  isSuccess: false,
-  message: ''
+  }
 });
 
 const debugStore = StoreDebugger.init(store);
