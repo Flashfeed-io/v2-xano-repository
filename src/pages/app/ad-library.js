@@ -2,129 +2,131 @@ import { createApp, reactive } from "petite-vue";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
-import { getUserData, logout } from "/src/utils/userData.js";
+import { getUserData } from "/src/utils/userData.js";
+
+// Initialize toast
+await toast.init();
 
 // A reactive store for user data
 const store = reactive({
   user: {},
   token: localStorage.getItem('xanoToken') || '',
-  activeFilterTab: 'platform'
+  fields: {
+    member_id: "",
+    email: "",
+    password: ""
+  }
 });
-
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("DOMContentLoaded event fired");
-  
   // Check if required containers exist
-  const containers = {
-    genreList: document.querySelector("#genre-list"),
-    searchbox: document.querySelector("#searchbox"),
-    hits: document.querySelector("#hits"),
-    poweredBy: document.querySelector("#poweredBy"),
-    clearRefinements: document.querySelector("#clear-refinements")
-  };
+  const requiredContainers = ['#genre-list', '#clear-refinements', '#searchbox', '#hits', '#poweredBy'];
+  console.log('Checking for required containers');
+  
+  const missingContainers = requiredContainers.filter(selector => !document.querySelector(selector));
+  if (missingContainers.length > 0) {
+    console.error('Missing containers:', missingContainers);
+    return;
+  }
+  
+  console.log('All required containers found');
 
-  console.log("Checking containers:", containers);
+  // establish connection to search index with application ID and public api key from algolia
+  const searchClient = algoliasearch(
+    "JPENBJBFVG",
+    "e52c4e233b34d3a2adc1dea827d0a9cf"
+  );
 
-  // Wait for containers to be available
-  const checkContainers = setInterval(() => {
-    const allContainersExist = Object.values(containers).every(container => container !== null);
-    
-    if (allContainersExist) {
-      console.log("All containers found, initializing Algolia");
-      clearInterval(checkContainers);
-      initializeAlgolia();
-    } else {
-      console.log("Waiting for containers...");
-      // Update container references
-      containers.genreList = document.querySelector("#genre-list");
-      containers.searchbox = document.querySelector("#searchbox");
-      containers.hits = document.querySelector("#hits");
-      containers.poweredBy = document.querySelector("#poweredBy");
-      containers.clearRefinements = document.querySelector("#clear-refinements");
+  // Debug: Test the connection
+  searchClient.search([
+    {
+      indexName: 'movie',
+      params: {
+        hitsPerPage: 1
+      }
     }
-  }, 100);
+  ]).then(response => {
+    console.log('Algolia connection test:', response);
+  }).catch(error => {
+    console.error('Algolia connection error:', error);
+  });
 
-  function initializeAlgolia() {
-    // establish connection to search index with application ID and public api key from algolia
-    const searchClient = algoliasearch(
-      "JPENBJBFVG",
-      "e52c4e233b34d3a2adc1dea827d0a9cf"
-    );
-    console.log("Search client created:", searchClient);
+  const search = instantsearch({
+    indexName: "movie",
+    searchClient,
+  });
 
-    const search = instantsearch({
-      indexName: "movie",
-      searchClient,
-    });
-    console.log("InstantSearch instance created:", search);
-
-    // add each widget
-    search.addWidgets([
-      // Clear Filters button
-      instantsearch.widgets.clearRefinements({
-        container: "#clear-refinements",
-        templates: {
-          resetLabel({ hasRefinements }, { html }) {
-            return html`<span
-              >${hasRefinements ? "Clear Filters" : "No Filters Applied"}</span
-            >`;
-          },
+  console.log('Initializing search with widgets');
+  // add each widget
+  search.addWidgets([
+    // Clear Filters button
+    instantsearch.widgets.clearRefinements({
+      container: "#clear-refinements",
+      templates: {
+        resetLabel({ hasRefinements }, { html }) {
+          return html`<span
+            >${hasRefinements ? "Clear Filters" : "No Filters Applied"}</span
+          >`;
         },
-        cssClasses: {
-          button: "alg_clearrefinements-button",
-          disabledButton: "alg_clearrefinements-button--disabled",
-        },
-      }),
-      // Genre component
-      instantsearch.widgets.refinementList({
-        container: "#genre-list",
-        attribute: "genres",
-        cssClasses: {
-          root: "ad-library_filter-max-height",
-        },
-        templates: {
-          item: `
-            <label class="w-checkbox form-checkbox">
-              <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
-              <input type="checkbox" style="opacity:0;position:absolute;z-index:-1" value="{{label}}" {{#isRefined}}checked{{/isRefined}} />
-              <span class="form-checkbox-label w-form-label">{{label}} ({{count}})</span>
-            </label>
-          `,
-        },
-      }),
-      // Search component
-      instantsearch.widgets.searchBox({
-        container: document.querySelector("#searchbox"),
-        placeholder: "Search anything",
-        cssClasses: {
-          input: "alg_form_field-search",
-          resetIcon: "wf-search-reset",
-        },
-        showSubmit: false,
-        showLoadingIndicator: false,
-        searchAsYouType: true,
-      }),
-      // Powered by algolia logo component
-      instantsearch.widgets.poweredBy({
-        container: "#poweredBy",
-        cssClasses: {
-          root: "wf-powered-by",
-        },
-      }),
-      // Hits component
-      instantsearch.widgets.infiniteHits({
-        container: document.querySelector("#hits"),
-        cssClasses: {
-          root: "wf-hits-root",
-          list: "wf-hits-list",
-          item: "wf-hit-item",
-          emptyRoot: "wf-hit-empty",
-        },
-        templates: {
-          item: `
+      },
+      cssClasses: {
+        button: "alg_clearrefinements-button",
+        disabledButton: "alg_clearrefinements-button--disabled",
+      },
+    }),
+    // Genre component
+    instantsearch.widgets.refinementList({
+      container: "#genre-list",
+      attribute: "genres",
+      cssClasses: {
+        root: "ad-library_filter-max-height",
+      },
+      templates: {
+        item: `
+          <label class="w-checkbox form-checkbox">
+            <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
+            <input type="checkbox" style="opacity:0;position:absolute;z-index:-1" value="{{label}}" {{#isRefined}}checked{{/isRefined}} />
+            <span class="form-checkbox-label w-form-label">{{label}} ({{count}})</span>
+          </label>
+        `,
+      },
+    }),
+    // Search component
+    instantsearch.widgets.searchBox({
+      container: document.querySelector("#searchbox"),
+      placeholder: "Search anything",
+      cssClasses: {
+        input: "alg_form_field-search",
+        resetIcon: "wf-search-reset",
+      },
+      showSubmit: false,
+      showLoadingIndicator: false,
+      searchAsYouType: true,
+    }),
+    // Powered by algolia logo component
+    instantsearch.widgets.poweredBy({
+      container: "#poweredBy",
+      cssClasses: {
+        root: "wf-powered-by",
+      },
+    }),
+    // Hits component
+    instantsearch.widgets.infiniteHits({
+      container: document.querySelector("#hits"),
+      cssClasses: {
+        root: "wf-hits-root",
+        list: "wf-hits-list",
+        item: "wf-hit-item",
+        emptyRoot: "wf-hit-empty",
+      },
+      transformItems(items) {
+        console.log('Transform items called with:', items.length, 'items');
+        return items;
+      },
+      templates: {
+        item: `
 <div class="alg_dashboard-area" id="{{slug}}" cc_score="{{score}}"><div class="alg_dashboard-block"><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="https://assets-global.website-files.com/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="alg_brand-image"></div><div><div class="alg_hit-brand-name">Brand</div><div class="div-block-641"><div class="subtext-11">{{slug}}</div></div></div></div><div class="div-block-639"><div class="div-block-640"></div><div class="div-block-640"></div><div class="div-block-640"></div><div class="div-block-640"></div></div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown" style=""><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-2" aria-controls="w-dropdown-list-2" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -151,15 +153,16 @@ window.addEventListener("DOMContentLoaded", () => {
       },
     }),
   ]);
-  console.log("Widgets added to search");
+
+  console.log('Starting search');
   search.start();
-  console.log("Search started");
 
   // Masonry initialization
   search.on("render", () => {
-    console.log("Search render event fired");
+    console.log('Render event triggered');
     const hitsList = document.querySelector(".wf-hits-list");
-    console.log("Hits list element:", hitsList);
+    console.log("Hits list container:", hitsList);
+    console.log("Hits container:", document.querySelector("#hits"));
     const msnry = new Masonry(hitsList, {
       itemSelector: ".wf-hit-item",
       percentPosition: false,
@@ -194,9 +197,8 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   search.helper.on("result", function (res) {
-    console.log("Search results received:", res?.hits?.length || 0, "hits");
+    console.log('Search results received:', res.nbHits, 'hits');
     const emptyBlock = document.querySelector("#cc_empty-state");
-    console.log("Empty state block:", emptyBlock);
     if (res && res.hits && res.hits.length > 0) {
       emptyBlock.style.display = "block";
     } else {
@@ -302,16 +304,11 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-/*--initializers----------------------------------------------------------*/
+/*-----------------------------------------------------------------------------------------------------------------------------*/
+
+
 const debugStore = StoreDebugger.init(store);
 
-if (store.token) {
-  await getUserData(store);
-}
-
-await toast.init();
-
-/*--mount----------------------------------------------------------*/
 const app = createApp({
   store,
   WebflowFormComponent(props) {
@@ -319,20 +316,13 @@ const app = createApp({
       ...props,
       store,
       fields: store.fields,
-      requiresAuth: true
+      requiresAuth: false
     });
   },
   async getUserData() {
     return getUserData(store);
   },
-  logout() {
-    return logout(store);
-  },
-  debugStore,
-  mounted(el) {
-    console.log('App mounted:', el);
-    console.log('Document ready state:', document.readyState);
-  }
-}).mount('[v-scope]');
+  debugStore
+});
 
 export { app };
