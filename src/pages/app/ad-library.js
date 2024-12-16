@@ -3,6 +3,7 @@ import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
 import { getUserData } from "/src/utils/userData.js";
+import { injectStyles } from "/src/utils/injectStyles.js";
 
 // Initialize toast
 await toast.init();
@@ -15,12 +16,16 @@ const store = reactive({
     member_id: "",
     email: "",
     password: ""
-  }
+  },
+  activeFilterTab: "platform"
 });
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
 
 window.addEventListener("DOMContentLoaded", () => {
+  // Inject styles first
+  injectStyles();
+
   // Check if required containers exist
   const requiredContainers = ['#genre-list', '#clear-refinements', '#searchbox', '#hits', '#poweredBy'];
   console.log('Checking for required containers');
@@ -302,6 +307,7 @@ window.addEventListener("DOMContentLoaded", () => {
       console.log("Click inside dropdown menu:", $(this));
     });
   });
+
 });
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
