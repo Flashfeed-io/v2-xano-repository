@@ -1,9 +1,10 @@
 import { createApp, reactive } from "petite-vue";
-import { StoreDebugger } from "/src/utils/storeDebugger.js";
-import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
-import { toast } from "/src/utils/toastManager.js";
-import { getUserData } from "/src/utils/userData.js";
-import { injectStyles } from "/src/utils/injectStyles.js";
+import { StoreDebugger } from "@/utils/storeDebugger.js";
+import { WebflowFormComponent } from "@/components/WebflowFormComponent.js";
+import { toast } from "@/utils/toastManager.js";
+import { getUserData } from "@/utils/userData.js";
+import { injectStyles } from "@/utils/injectStyles.js";
+import { initCustomDropdown } from "@/utils/customDropdown.js";
 
 // A reactive store for user data
 const store = reactive({
@@ -31,21 +32,6 @@ window.addEventListener("DOMContentLoaded", () => {
     "JPENBJBFVG",
     "e52c4e233b34d3a2adc1dea827d0a9cf"
   );
-
-  // Debug: Test the connection
-  searchClient.search([
-    {
-      indexName: 'movie',
-      params: {
-        hitsPerPage: 1
-      }
-    }
-  ]).then(response => {
-    console.log('[DEBUG] Algolia initialized successfully');
-    console.log('[DEBUG] First record (full):', JSON.stringify(response.results[0].hits[0], null, 2));
-  }).catch(error => {
-    console.error('[DEBUG] Algolia initialization error:', error);
-  });
 
   const search = instantsearch({
     indexName: "movie",
@@ -235,53 +221,9 @@ window.addEventListener("DOMContentLoaded", () => {
   // alternative to ix2
   $(document).ready(function () {
     console.log('[DEBUG] Document ready - Start');
-    
-    // Disable Webflow's dropdown functionality
-    $(document).ready(function() {
-      // Remove Webflow's dropdown bindings
-      $('.w-dropdown').each(function() {
-        $(this).unbind();
-        $(this).removeData();
-      });
 
-      // Our custom dropdown implementation
-      $('.w-dropdown-toggle').on('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const dropdown = $(this).siblings('.w-dropdown-list');
-        const isOpen = dropdown.hasClass('w--open');
-        
-        // Close all other dropdowns
-        $('.w-dropdown-list').not(dropdown).removeClass('w--open');
-        
-        // Toggle this dropdown
-        dropdown.toggleClass('w--open');
-        
-        // If opening, ensure proper styling
-        if (!isOpen) {
-          dropdown.css({
-            'display': 'block',
-            'opacity': '1',
-            'transform': 'translate3d(0px, 0px, 0px) scale3d(1, 1, 1)',
-            'transform-style': 'preserve-3d'
-          });
-        }
-      });
-
-      // Prevent dropdown from closing when clicking checkboxes or labels
-      $('.w-dropdown-list').on('click', 'input[type="checkbox"], label', function(e) {
-        e.stopPropagation();
-      });
-
-      // Close dropdowns when clicking outside
-      $(document).on('click', function(e) {
-        if (!$(e.target).closest('.w-dropdown').length) {
-          $('.w-dropdown-list').removeClass('w--open');
-        }
-      });
-    });
-
+    /*--algolia hits dropdown--*/
+    // open
     function openDropdown(dropdownToggle, dropdownMenu) {
       console.log('[DEBUG] Opening dropdown:', { 
         toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
@@ -297,6 +239,7 @@ window.addEventListener("DOMContentLoaded", () => {
       dropdownMenu.addClass("w--open");
     }
 
+    // close
     function closeDropdown(dropdownToggle, dropdownMenu) {
       console.log('[DEBUG] Closing dropdown:', {
         toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
@@ -307,18 +250,7 @@ window.addEventListener("DOMContentLoaded", () => {
       dropdownMenu.removeClass("w--open");
     }
 
-    // Override Webflow's dropdown close behavior
-    const originalClose = Webflow.require('dropdown').close;
-    Webflow.require('dropdown').close = function(dropdownElement) {
-      const clickTarget = $(document.activeElement);
-      if (clickTarget.is('input[type="checkbox"]') || clickTarget.closest('.w-checkbox').length) {
-        console.log('[Webflow] Preventing dropdown close for checkbox');
-        return;
-      }
-      originalClose(dropdownElement);
-    };
-
-    // Click event on the dropdown toggle to open/close the dropdown
+    // close on toggle reclick?
     $(document).on("click", ".alg_hit-dropdown-toggle", function (event) {
       event.stopPropagation();
       
@@ -334,19 +266,7 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Keep dropdown open for checkbox clicks
-    $(document).on("click", "input[type='checkbox']", function(event) {
-      const dropdown = $(this).closest('.w-dropdown-list');
-      if (dropdown.length && dropdown.hasClass('w--open')) {
-        event.stopPropagation();
-        // Re-add the open class after a tiny delay
-        setTimeout(() => {
-          dropdown.addClass('w--open');
-        }, 0);
-      }
-    });
-
-    // Global click handler
+    // close on outside click
     $(document).on("click", function(event) {
       if ($(event.target).is('input[type="checkbox"]') || $(event.target).closest('.w-checkbox').length) {
         return;
@@ -361,76 +281,13 @@ window.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // Keep dropdown open when clicking checkboxes
-    const observer = new MutationObserver((mutations) => {
-      console.log('[Observer] Mutations detected:', mutations.length);
-      
-      mutations.forEach((mutation) => {
-        console.log('[Observer] Mutation type:', mutation.type);
-        console.log('[Observer] Changed attribute:', mutation.attributeName);
-        console.log('[Observer] Target:', mutation.target);
-        
-        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-          const dropdown = mutation.target;
-          console.log('[Observer] Dropdown classes:', dropdown.className);
-          console.log('[Observer] Has w-dropdown-list:', dropdown.classList.contains('w-dropdown-list'));
-          console.log('[Observer] Has w--open:', dropdown.classList.contains('w--open'));
-          
-          const checkedBoxes = dropdown.querySelectorAll(':checked');
-          console.log('[Observer] Checked boxes found:', checkedBoxes.length);
-          
-          if (dropdown.classList.contains('w-dropdown-list') && 
-              !dropdown.classList.contains('w--open') && 
-              checkedBoxes.length > 0) {
-            console.log('[Observer] Forcing dropdown to stay open!');
-            // Keep trying to add the class for a short period
-            const startTime = Date.now();
-            const keepOpen = () => {
-              const now = Date.now();
-              if (now - startTime < 500) { // Try for 500ms
-                dropdown.classList.add('w--open');
-                requestAnimationFrame(keepOpen);
-              }
-            };
-            keepOpen();
-          }
-        }
-      });
-    });
-
-    // Also prevent the dropdown from closing when clicking checkboxes
-    $(document).on('click', '.w-dropdown-list input[type="checkbox"], .w-dropdown-list label', function(e) {
-      e.stopPropagation();
-      const dropdown = $(this).closest('.w-dropdown-list')[0];
-      if (dropdown) {
-        console.log('[Click] Preventing dropdown close');
-        dropdown.classList.add('w--open');
-        // Keep the dropdown open for a short period after click
-        const startTime = Date.now();
-        const keepOpen = () => {
-          const now = Date.now();
-          if (now - startTime < 500) { // Try for 500ms
-            dropdown.classList.add('w--open');
-            requestAnimationFrame(keepOpen);
-          }
-        };
-        keepOpen();
-      }
-    });
-
-    // Start observing dropdowns
-    const dropdowns = document.querySelectorAll('.w-dropdown-list');
-    console.log('[Observer] Found dropdowns to observe:', dropdowns.length);
-    
-    dropdowns.forEach((dropdown, index) => {
-      console.log(`[Observer] Starting observation of dropdown ${index + 1}`);
-      observer.observe(dropdown, { 
-        attributes: true,
-        attributeFilter: ['class']
-      });
-    });
-
-    console.log('[DEBUG] Document ready - Complete');
+    /*--custom dropdown--*/
+    try {
+      console.log('[DEBUG] Initializing custom dropdown');
+      initCustomDropdown();
+    } catch (error) {
+      console.error('[DEBUG] Error initializing custom dropdown:', error);
+    }
   });
 });
 
@@ -454,10 +311,10 @@ const app = createApp({
       requiresAuth: true
     });
   },
-  async getUserData() {
+  getUserData: async () => {
     return getUserData(store);
   },
-  logout() {
+  logout: () => {
     return logout(store);
   },
   debugStore
