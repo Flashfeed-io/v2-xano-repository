@@ -20,15 +20,11 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // Check if required containers exist
   const requiredContainers = ['#genre-list', '#clear-refinements', '#searchbox', '#hits', '#poweredBy'];
-  console.log('Checking for required containers');
-  
   const missingContainers = requiredContainers.filter(selector => !document.querySelector(selector));
   if (missingContainers.length > 0) {
-    console.error('Missing containers:', missingContainers);
+    console.error('[DEBUG] Missing containers:', missingContainers);
     return;
   }
-  
-  console.log('All required containers found');
 
   // establish connection to search index with application ID and public api key from algolia
   const searchClient = algoliasearch(
@@ -45,9 +41,10 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     }
   ]).then(response => {
-    console.log('Algolia connection test:', response);
+    console.log('[DEBUG] Algolia initialized successfully');
+    console.log('[DEBUG] First record (full):', JSON.stringify(response.results[0].hits[0], null, 2));
   }).catch(error => {
-    console.error('Algolia connection error:', error);
+    console.error('[DEBUG] Algolia initialization error:', error);
   });
 
   const search = instantsearch({
@@ -55,7 +52,7 @@ window.addEventListener("DOMContentLoaded", () => {
     searchClient,
   });
 
-  console.log('Initializing search with widgets');
+  console.log('[DEBUG] Initializing search with widgets');
   // add each widget
   search.addWidgets([
     // Clear Filters button
@@ -73,22 +70,58 @@ window.addEventListener("DOMContentLoaded", () => {
         disabledButton: "alg_clearrefinements-button--disabled",
       },
     }),
+    // Hits widget to see actual data in Algolia records
+    instantsearch.widgets.hits({
+      container: '#hits',
+      templates: {
+        item(hit) {
+          console.log('[DEBUG] Hit record:', hit);
+          return `<div>${JSON.stringify(hit)}</div>`;
+        }
+      }
+    }),
     // Genre component
     instantsearch.widgets.refinementList({
-      container: "#genre-list",
+      container: "#refinement-platform",
       attribute: "genres",
       cssClasses: {
         root: "ad-library_filter-max-height",
       },
+      transformItems(items) {
+        console.log('[DEBUG] Platform refinement items:', items);
+        return items;
+      },
+      searchable: true,
+      operator: 'or',
+      limit: 10,
       templates: {
         item: `
           <label class="w-checkbox form-checkbox">
             <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
-            <input type="checkbox" style="opacity:0;position:absolute;z-index:-1" value="{{label}}" {{#isRefined}}checked{{/isRefined}} />
+            <input type="checkbox" 
+              style="opacity:0;position:absolute;z-index:-1" 
+              value="{{label}}" 
+              {{#isRefined}}checked{{/isRefined}}
+              onclick="
+                const originalEvent = event;
+                event.stopPropagation();
+                setTimeout(() => {
+                  // Create and dispatch a new click event after Algolia processes
+                  const newEvent = new MouseEvent('click', {
+                    bubbles: false,
+                    cancelable: true,
+                    view: window
+                  });
+                  originalEvent.target.dispatchEvent(newEvent);
+                }, 10);
+              "
+            />
             <span class="form-checkbox-label w-form-label">{{label}} ({{count}})</span>
           </label>
         `,
-      },
+        noResults: 'No genres found.',
+        noRefinementRoot: 'No genres available.'
+      }
     }),
     // Search component
     instantsearch.widgets.searchBox({
@@ -119,7 +152,7 @@ window.addEventListener("DOMContentLoaded", () => {
         emptyRoot: "wf-hit-empty",
       },
       transformItems(items) {
-        console.log('Transform items called with:', items.length, 'items');
+        console.log('[DEBUG] Transform items called with:', items.length, 'items');
         return items;
       },
       templates: {
@@ -151,30 +184,29 @@ window.addEventListener("DOMContentLoaded", () => {
     }),
   ]);
 
-  console.log('Starting search');
+  console.log('[DEBUG] Starting search');
   search.start();
 
   // Masonry initialization
   search.on("render", () => {
-    console.log('Render event triggered');
+    console.log('[DEBUG] Render event - Start');
     const hitsList = document.querySelector(".wf-hits-list");
-    console.log("Hits list container:", hitsList);
-    console.log("Hits container:", document.querySelector("#hits"));
+    if (!hitsList) {
+      console.error('[DEBUG] Hits list container not found');
+      return;
+    }
+
     const msnry = new Masonry(hitsList, {
       itemSelector: ".wf-hit-item",
       percentPosition: false,
       horizontalOrder: true,
     });
-    console.log("Checking -> : msnry", msnry);
 
     //if saved
     $(".alg_dashboard-area").each(function () {
       const slug = $(this).attr("id");
       const saveButton = $(this).find("[cc_data='alg_save']");
-      console.log("Checking -> : saveButton", saveButton);
-
       const score = $(this).find("[cc_score]");
-      console.log("Checking -> : score", score);
 
       //dummy array
       const mySavedAds = [
@@ -182,124 +214,224 @@ window.addEventListener("DOMContentLoaded", () => {
         "my-policeman",
         "jerry-marge-go-large",
       ];
-      console.log("Checking -> : mySavedAds", mySavedAds);
 
       //if saved
       if (mySavedAds.includes(slug)) {
-        console.log("Checking -> : inaside slug saved");
         $(this).addClass("cc_request");
       }
-      //if not saved
     });
-  });
-
-  search.helper.on("result", function (res) {
-    console.log('Search results received:', res.nbHits, 'hits');
-    const emptyBlock = document.querySelector("#cc_empty-state");
-    if (res && res.hits && res.hits.length > 0) {
-      emptyBlock.style.display = "block";
-    } else {
-      emptyBlock.style.display = "none";
-    }
+    console.log('[DEBUG] Render event - Complete');
   });
 
   // hide loader in Webflow after initiating algolia
   const loader = document.querySelector("[data-cc='loader']");
-  loader.style.opacity = "0";
-  setTimeout(() => {
-    loader.style.display = "none";
-  }, 2000);
+  if (loader) {
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      loader.style.display = "none";
+    }, 2000);
+  }
 
   // alternative to ix2
   $(document).ready(function () {
+    console.log('[DEBUG] Document ready - Start');
+    
+    // Disable Webflow's dropdown functionality
+    $(document).ready(function() {
+      // Remove Webflow's dropdown bindings
+      $('.w-dropdown').each(function() {
+        $(this).unbind();
+        $(this).removeData();
+      });
+
+      // Our custom dropdown implementation
+      $('.w-dropdown-toggle').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const dropdown = $(this).siblings('.w-dropdown-list');
+        const isOpen = dropdown.hasClass('w--open');
+        
+        // Close all other dropdowns
+        $('.w-dropdown-list').not(dropdown).removeClass('w--open');
+        
+        // Toggle this dropdown
+        dropdown.toggleClass('w--open');
+        
+        // If opening, ensure proper styling
+        if (!isOpen) {
+          dropdown.css({
+            'display': 'block',
+            'opacity': '1',
+            'transform': 'translate3d(0px, 0px, 0px) scale3d(1, 1, 1)',
+            'transform-style': 'preserve-3d'
+          });
+        }
+      });
+
+      // Prevent dropdown from closing when clicking checkboxes or labels
+      $('.w-dropdown-list').on('click', 'input[type="checkbox"], label', function(e) {
+        e.stopPropagation();
+      });
+
+      // Close dropdowns when clicking outside
+      $(document).on('click', function(e) {
+        if (!$(e.target).closest('.w-dropdown').length) {
+          $('.w-dropdown-list').removeClass('w--open');
+        }
+      });
+    });
+
     function openDropdown(dropdownToggle, dropdownMenu) {
-      console.log("Opening dropdown");
-      console.log("Dropdown toggle:", dropdownToggle);
-      console.log("Dropdown menu:", dropdownMenu);
+      console.log('[DEBUG] Opening dropdown:', { 
+        toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
+        menu: dropdownMenu.length > 0 ? 'Found' : 'Not Found'
+      });
 
       // Close all other dropdowns first
       $(".alg_hit-dropdown-toggle").not(dropdownToggle).removeClass("w--open");
-      $(".alg_hit-dropdown-menu")
-        .not(dropdownMenu)
-        .each(function () {
-          console.log("Closing other dropdown:", $(this));
-          $(this).removeClass("w--open").css({
-            transform: "translate3d(0px, 8px, 0px) scale3d(0.7, 0.7, 1)",
-            opacity: "0",
-          });
-          setTimeout(() => $(this).hide(), 300); // Delay to match CSS transition duration
-        });
+      $(".alg_hit-dropdown-menu").not(dropdownMenu).removeClass("w--open");
 
-      $(".alg_hit-dropdown")
-        .not(dropdownToggle.closest(".alg_hit-dropdown"))
-        .css("z-index", "");
-
-      // Open the clicked dropdown
+      // Open this dropdown
       dropdownToggle.addClass("w--open");
-      dropdownMenu.show(); // Ensure the menu is visible
-      setTimeout(function () {
-        console.log("Adding w--open to dropdown menu:", dropdownMenu);
-        dropdownMenu.addClass("w--open").css({
-          transform: "translate3d(0px, 0px, 0px) scale3d(1, 1, 1)",
-          opacity: "1",
-        });
-      }, 10); // Small delay to trigger CSS transition
-      dropdownToggle.closest(".alg_hit-dropdown").css("z-index", "901");
+      dropdownMenu.addClass("w--open");
     }
 
     function closeDropdown(dropdownToggle, dropdownMenu) {
-      console.log("Closing dropdown");
-      console.log("Dropdown toggle:", dropdownToggle);
-      console.log("Dropdown menu:", dropdownMenu);
-
+      console.log('[DEBUG] Closing dropdown:', {
+        toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
+        menu: dropdownMenu.length > 0 ? 'Found' : 'Not Found'
+      });
+      
       dropdownToggle.removeClass("w--open");
       dropdownMenu.removeClass("w--open");
-      setTimeout(function () {
-        dropdownMenu.css({
-          transform: "translate3d(0px, 8px, 0px) scale3d(0.7, 0.7, 1)",
-          opacity: "0",
-        });
-        setTimeout(() => {
-          console.log("Hiding dropdown menu:", dropdownMenu);
-          dropdownMenu.hide();
-        }, 300); // Delay to match CSS transition duration
-      }, 10);
-      dropdownToggle.closest(".alg_hit-dropdown").css("z-index", "");
     }
+
+    // Override Webflow's dropdown close behavior
+    const originalClose = Webflow.require('dropdown').close;
+    Webflow.require('dropdown').close = function(dropdownElement) {
+      const clickTarget = $(document.activeElement);
+      if (clickTarget.is('input[type="checkbox"]') || clickTarget.closest('.w-checkbox').length) {
+        console.log('[Webflow] Preventing dropdown close for checkbox');
+        return;
+      }
+      originalClose(dropdownElement);
+    };
 
     // Click event on the dropdown toggle to open/close the dropdown
     $(document).on("click", ".alg_hit-dropdown-toggle", function (event) {
       event.stopPropagation();
-      console.log("Dropdown toggle clicked:", $(this));
+      
       const dropdownToggle = $(this);
       const dropdownMenu = dropdownToggle.next(".alg_hit-dropdown-menu");
+
       if (dropdownMenu.hasClass("w--open")) {
-        closeDropdown(dropdownToggle, dropdownMenu);
+        if (!$(event.target).is('input[type="checkbox"]') && !$(event.target).closest('.w-checkbox').length) {
+          closeDropdown(dropdownToggle, dropdownMenu);
+        }
       } else {
         openDropdown(dropdownToggle, dropdownMenu);
       }
     });
 
-    // Click event outside the dropdown to close it
-    $(document).on("click", function () {
-      console.log("Click outside dropdown detected");
-      $(".alg_hit-dropdown-toggle").each(function () {
+    // Keep dropdown open for checkbox clicks
+    $(document).on("click", "input[type='checkbox']", function(event) {
+      const dropdown = $(this).closest('.w-dropdown-list');
+      if (dropdown.length && dropdown.hasClass('w--open')) {
+        event.stopPropagation();
+        // Re-add the open class after a tiny delay
+        setTimeout(() => {
+          dropdown.addClass('w--open');
+        }, 0);
+      }
+    });
+
+    // Global click handler
+    $(document).on("click", function(event) {
+      if ($(event.target).is('input[type="checkbox"]') || $(event.target).closest('.w-checkbox').length) {
+        return;
+      }
+
+      $(".alg_hit-dropdown-toggle").each(function() {
         const dropdownToggle = $(this);
         const dropdownMenu = dropdownToggle.next(".alg_hit-dropdown-menu");
         if (dropdownMenu.hasClass("w--open")) {
-          console.log("Closing dropdown from outside click:", dropdownMenu);
           closeDropdown(dropdownToggle, dropdownMenu);
         }
       });
     });
 
-    // Prevent click event on the dropdown menu from closing it
-    $(document).on("click", ".alg_hit-dropdown-menu", function (event) {
-      event.stopPropagation();
-      console.log("Click inside dropdown menu:", $(this));
+    // Keep dropdown open when clicking checkboxes
+    const observer = new MutationObserver((mutations) => {
+      console.log('[Observer] Mutations detected:', mutations.length);
+      
+      mutations.forEach((mutation) => {
+        console.log('[Observer] Mutation type:', mutation.type);
+        console.log('[Observer] Changed attribute:', mutation.attributeName);
+        console.log('[Observer] Target:', mutation.target);
+        
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const dropdown = mutation.target;
+          console.log('[Observer] Dropdown classes:', dropdown.className);
+          console.log('[Observer] Has w-dropdown-list:', dropdown.classList.contains('w-dropdown-list'));
+          console.log('[Observer] Has w--open:', dropdown.classList.contains('w--open'));
+          
+          const checkedBoxes = dropdown.querySelectorAll(':checked');
+          console.log('[Observer] Checked boxes found:', checkedBoxes.length);
+          
+          if (dropdown.classList.contains('w-dropdown-list') && 
+              !dropdown.classList.contains('w--open') && 
+              checkedBoxes.length > 0) {
+            console.log('[Observer] Forcing dropdown to stay open!');
+            // Keep trying to add the class for a short period
+            const startTime = Date.now();
+            const keepOpen = () => {
+              const now = Date.now();
+              if (now - startTime < 500) { // Try for 500ms
+                dropdown.classList.add('w--open');
+                requestAnimationFrame(keepOpen);
+              }
+            };
+            keepOpen();
+          }
+        }
+      });
     });
-  });
 
+    // Also prevent the dropdown from closing when clicking checkboxes
+    $(document).on('click', '.w-dropdown-list input[type="checkbox"], .w-dropdown-list label', function(e) {
+      e.stopPropagation();
+      const dropdown = $(this).closest('.w-dropdown-list')[0];
+      if (dropdown) {
+        console.log('[Click] Preventing dropdown close');
+        dropdown.classList.add('w--open');
+        // Keep the dropdown open for a short period after click
+        const startTime = Date.now();
+        const keepOpen = () => {
+          const now = Date.now();
+          if (now - startTime < 500) { // Try for 500ms
+            dropdown.classList.add('w--open');
+            requestAnimationFrame(keepOpen);
+          }
+        };
+        keepOpen();
+      }
+    });
+
+    // Start observing dropdowns
+    const dropdowns = document.querySelectorAll('.w-dropdown-list');
+    console.log('[Observer] Found dropdowns to observe:', dropdowns.length);
+    
+    dropdowns.forEach((dropdown, index) => {
+      console.log(`[Observer] Starting observation of dropdown ${index + 1}`);
+      observer.observe(dropdown, { 
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    });
+
+    console.log('[DEBUG] Document ready - Complete');
+  });
 });
 
 /*--initializers----------------------------------------------------------*/
