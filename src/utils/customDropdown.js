@@ -7,7 +7,6 @@ export const initCustomDropdown = () => {
   const dropdownButton = document.querySelector('[cc_data="dropdown-button"]');
   const dropdownList = document.querySelector('.cc_option-dropdown__list-custom');
   const filterTabs = document.querySelectorAll('.ad-library_filter-tab');
-  const vueVisibilityDivs = document.querySelectorAll('.vue-visibility');
 
   // Debug element existence and classes
   console.log('[DEBUG] Dropdown elements found:', {
@@ -29,10 +28,6 @@ export const initCustomDropdown = () => {
     filterTabs: {
       count: filterTabs.length,
       classes: Array.from(filterTabs).map(tab => tab.classList.toString())
-    },
-    vueVisibility: {
-      count: vueVisibilityDivs.length,
-      classes: Array.from(vueVisibilityDivs).map(div => div.classList.toString())
     }
   });
 
@@ -40,11 +35,6 @@ export const initCustomDropdown = () => {
     console.warn('[DEBUG] Custom dropdown elements not found');
     return;
   }
-
-  // Initialize visibility state - show first tab content, hide others
-  vueVisibilityDivs.forEach((div, index) => {
-    div.style.display = index === 0 ? 'block' : 'none';
-  });
 
   // Toggle dropdown visibility
   const toggleDropdown = (show) => {
@@ -94,11 +84,6 @@ export const initCustomDropdown = () => {
       // Update active tab styling
       filterTabs.forEach(t => t.classList.remove('is--cc_active'));
       tab.classList.add('is--cc_active');
-
-      // Show selected tab content, hide others
-      vueVisibilityDivs.forEach((div, i) => {
-        div.style.display = i === index ? 'block' : 'none';
-      });
     });
   });
 
