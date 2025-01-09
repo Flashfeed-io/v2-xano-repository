@@ -91,7 +91,7 @@ export function WebflowFormComponent(props = {}) {
           'Content-Type': 'application/json'
         };
         if (props.requiresAuth !== false) {
-          const token = localStorage.getItem('xanoToken');
+          const token = document.cookie.split(';').find(c => c.trim().startsWith('ff_auth=')).split('=')[1];
           if (token) {
             headers.Authorization = `Bearer ${token}`;
           }
@@ -115,7 +115,7 @@ export function WebflowFormComponent(props = {}) {
         console.log("Form submission successful:", data);
 
         if (data.authToken) {
-          localStorage.setItem('xanoToken', data.authToken);
+          document.cookie = `ff_auth=${data.authToken}; path=/;`;
           if (props.store) {
             props.store.token = data.authToken;
             console.log('Updated token in store');
