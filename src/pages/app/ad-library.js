@@ -2,14 +2,19 @@ import { createApp, reactive } from "petite-vue";
 import { StoreDebugger } from "@/utils/storeDebugger.js";
 import { WebflowFormComponent } from "@/components/WebflowFormComponent.js";
 import { toast } from "@/utils/toastManager.js";
-import { getUserData } from "@/utils/userData.js";
+import { getUserData, logout, verifyAuth } from "@/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
 import { initCustomDropdown } from "@/utils/customDropdown.js";
 
 // A reactive store for user data
 const store = reactive({
   user: {},
-  token: localStorage.getItem('xanoToken') || '',
+  token: (() => {
+    console.log('All cookies:', document.cookie);
+    const authCookie = document.cookie.split(';')
+      .find(c => c.trim().startsWith('ff_auth='));
+    return authCookie ? authCookie.split('=')[1] : '';
+  })(),
   activeFilterTab: "platform"
 });
 
@@ -115,7 +120,7 @@ window.addEventListener("DOMContentLoaded", () => {
       placeholder: "Search anything",
       cssClasses: {
         input: "alg_form_field-search",
-        resetIcon: "wf-search-reset",
+        resetIcon: "webflow-search-reset",
       },
       showSubmit: false,
       showLoadingIndicator: false,
@@ -125,21 +130,18 @@ window.addEventListener("DOMContentLoaded", () => {
     instantsearch.widgets.poweredBy({
       container: "#poweredBy",
       cssClasses: {
-        root: "wf-powered-by",
+        root: "webflow-powered-by",
       },
     }),
     // Hits component
     instantsearch.widgets.infiniteHits({
       container: document.querySelector("#hits"),
       cssClasses: {
-        root: "wf-hits-root",
-        list: "wf-hits-list",
-        item: "wf-hit-item",
-        emptyRoot: "wf-hit-empty",
-      },
-      transformItems(items) {
-        console.log('[DEBUG] Transform items called with:', items.length, 'items');
-        return items;
+        root: "webflow-hits-root",
+        list: "webflow-hits-list",
+        item: "webflow-hit-item",
+        emptyRoot: "webflow-hit-empty",
+        loadMore: "webflow-load-more",
       },
       templates: {
         item: `
@@ -176,14 +178,14 @@ window.addEventListener("DOMContentLoaded", () => {
   // Masonry initialization
   search.on("render", () => {
     console.log('[DEBUG] Render event - Start');
-    const hitsList = document.querySelector(".wf-hits-list");
+    const hitsList = document.querySelector(".webflow-hits-list");
     if (!hitsList) {
       console.error('[DEBUG] Hits list container not found');
       return;
     }
 
     const msnry = new Masonry(hitsList, {
-      itemSelector: ".wf-hit-item",
+      itemSelector: ".webflow-hit-item",
       percentPosition: false,
       horizontalOrder: true,
     });
@@ -294,6 +296,14 @@ window.addEventListener("DOMContentLoaded", () => {
 /*--initializers----------------------------------------------------------*/
 const debugStore = StoreDebugger.init(store);
 
+// Initial auth check
+if (store.token) {
+  const isAuthenticated = await verifyAuth(store);
+  if (!isAuthenticated) {
+    window.location.href = "/";
+  }
+}
+
 if (store.token) {
   await getUserData(store);
 }
@@ -311,13 +321,19 @@ const app = createApp({
       requiresAuth: true
     });
   },
-  getUserData: async () => {
+  async getUserData() {
     return getUserData(store);
   },
-  logout: () => {
+  logout() {
     return logout(store);
   },
-  debugStore
+  debugStore,
+  mounted() {
+    // Initialize page-specific functionality
+    injectStyles();
+    initCustomDropdown();
+    search.start();
+  }
 });
 
 export { app };

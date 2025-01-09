@@ -58,7 +58,7 @@
 
 /* || Genre component */
 
-.wf-refinmentlist-count {
+.webflow-refinmentlist-count {
   border-color: var(--white75);
   background-color: black;
   color: white;
@@ -69,14 +69,14 @@
   font-size: 16px;
 }
 
-.wf-refinmentlist-checkbox {
+.webflow-refinmentlist-checkbox {
   width: 18px;
   height: 18px;
   border-color: var(--white75);
   background-color: var(--white75);
 }
 
-.wf-refinmentlist-checkbox:checked {
+.webflow-refinmentlist-checkbox:checked {
   border-color: var(--white75);
   color: transparent;
   background-repeat: no-repeat;
@@ -88,27 +88,27 @@
 
 /* || Rating component */
 
-.wf-rating-empty-star-icon {
+.webflow-rating-empty-star-icon {
   opacity: 40%;
 }
 
-.wf-rating-count {
+.webflow-rating-count {
   border-color: var(--white75);
   background-color: black;
   color: white;
   padding: 3px 6px;
 }
 
-.wf-rating-fullstar-icon {
+.webflow-rating-fullstar-icon {
   fill: white;
 }
 
-.wf-rating-selected-item > div > a > svg {
+.webflow-rating-selected-item > div > a > svg {
   fill: yellow;
   stroke: none;
 }
 
-.wf-rating-item > div > a > .wf-rating-empty-star-icon {
+.webflow-rating-item > div > a > .webflow-rating-empty-star-icon {
   fill: white !important;
 }
 
@@ -149,7 +149,7 @@
 
 /* || Search component */
 
-.wf-search-reset {
+.webflow-search-reset {
   position: absolute;
   right: 16px;
   top: -5px;
@@ -171,7 +171,7 @@
   height: 100%;
 }
 
-.wf-search-input:focus {
+.webflow-search-input:focus {
   border-color: white;
 }
 
@@ -181,7 +181,7 @@
 
 /* || Powered by algolia component */
 
-.wf-powered-by {
+.webflow-powered-by {
   background: white;
   padding: 15px;
   height: 40px;
@@ -190,21 +190,21 @@
 
 /* || Stats component */
 
-.wf-label {
+.webflow-label {
   display: none;
 }
 
 /* || Current filters component */
 
-.wf-current-refinement-list {
+.webflow-current-refinement-list {
   display: block;
 }
 
-.wf-current-refinement-delete {
+.webflow-current-refinement-delete {
   color: white;
 }
 
-.wf-current-refinement-item {
+.webflow-current-refinement-item {
   display: flex;
   flex-wrap: wrap;
   background: none;
@@ -213,7 +213,7 @@
   padding: 0px;
 }
 
-.wf-current-refinement-category {
+.webflow-current-refinement-category {
   margin: 8px;
   flex-shrink: 0;
   color: white;
@@ -262,7 +262,7 @@
 }
 
 /* fixes empty state
-.wf-hit-empty {
+.webflow-hit-empty {
   display: none;
 }
 */
@@ -327,52 +327,52 @@
 
 /* Root container for hits */
 
-.wf-hits-root {
+.webflow-hits-root {
   display: flex;
   flex-direction: column;
 }
 
-.wf-hits-list {
+.webflow-hits-list {
   display: flex;
   flex-wrap: wrap;
 }
 
-  .wf-hit-item {
+  .webflow-hit-item {
    padding: 8px;
   }
 
-@media (min-width: 2061px) {
-  .wf-hit-item {
+@media (min-width: 2901px) {
+  .webflow-hit-item {
     width: calc(100% / 6); /* 6 columns for extra large desktops */
   }
 }
 
-@media (max-width: 2060px) {
-  .wf-hit-item {
+@media (max-width: 2900px) {
+  .webflow-hit-item {
     width: calc(100% / 5); /* 5 columns for large desktops */
   }
 }
 
-@media (max-width: 1680px) {
-  .wf-hit-item {
+@media (max-width: 2400px) {
+  .webflow-hit-item {
     width: calc(100% / 4); /* 4 columns for desktops */
   }
 }
 
-@media (max-width: 1340px) {
-  .wf-hit-item {
+@media (max-width: 2050px) {
+  .webflow-hit-item {
     width: calc(100% / 3); /* 3 columns for tablets */
   }
 }
 
-@media (max-width: 992px) {
-  .wf-hit-item {
+@media (max-width: 1525px) {
+  .webflow-hit-item {
     width: calc(100% / 2); /* 2 columns for small tablets */
   }
 }
 
 @media (max-width: 576px) {
-  .wf-hit-item {
+  .webflow-hit-item {
     width: 100%; /* 1 column for mobile */
   }
 }
@@ -381,20 +381,20 @@
 
 /* || Pagination component */
 
-.wf-pagination-root {
+.webflow-pagination-root {
   display: flex;
   justify-content: end;
 }
 
-.wf-pagination-list {
+.webflow-pagination-list {
   flex-wrap: wrap;
 }
 
-.wf-pagination-selected-item {
+.webflow-pagination-selected-item {
   background-color: var(--red);
 }
 
-* > .wf-pagination-link {
+* > .webflow-pagination-link {
   font-size: 14px;
   padding: 20px;
   color: white;
@@ -402,11 +402,11 @@
   background-color: transparent !important;
 }
 
-* > .wf-pagination-link:hover {
+* > .webflow-pagination-link:hover {
   background-color: var(--red) !important;
 }
 
-.wf-pagination-disabled > * {
+.webflow-pagination-disabled > * {
   opacity: 35%;
   cursor: not-allowed;
 }

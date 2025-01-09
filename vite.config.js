@@ -10,15 +10,11 @@ export default defineConfig({
     }
   },
   server: {
+    open: true,
     port: 3000,
-    strictPort: true,
-    cors: true,
     hmr: {
-      overlay: false
-    },
-    fs: {
-      strict: false,
-      allow: ['..']
+      host: 'localhost',
+      protocol: 'ws',
     }
   },
   optimizeDeps: {

@@ -8,14 +8,13 @@ import { getUserData, logout } from "/src/utils/userData.js";
 /*--main code----------------------------------------------------------*/
 const store = reactive({
   user: {},
-  token: localStorage.getItem('xanoToken') || '',
+  token: document.cookie.split(';').find(c => c.trim().startsWith('ff_auth=')).split('=')[1] || '',
   fields: {
     member_id: "",
     email: "",
     password: ""
   }
 });
-
 
 
 /*--initializers----------------------------------------------------------*/

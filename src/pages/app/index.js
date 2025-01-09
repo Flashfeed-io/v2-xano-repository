@@ -2,27 +2,28 @@ import { createApp, reactive } from "petite-vue";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
-import { getUserData, logout } from "/src/utils/userData.js";
-
+import { getUserData, logout, verifyAuth } from "/src/utils/userData.js";
 
 /*--main code----------------------------------------------------------*/
 const store = reactive({
   user: {},
-  token: localStorage.getItem('xanoToken') || '',
-  fields: {
-    member_id: "",
-    email: "",
-    password: ""
-  }
+  token: (() => {
+    console.log('All cookies:', document.cookie);
+    const authCookie = document.cookie.split(';')
+      .find(c => c.trim().startsWith('ff_auth='));
+    return authCookie ? authCookie.split('=')[1] : '';
+  })()
 });
-
-
 
 /*--initializers----------------------------------------------------------*/
 const debugStore = StoreDebugger.init(store);
 
+// Initial auth check
 if (store.token) {
-  await getUserData(store);
+  const isAuthenticated = await verifyAuth(store);
+  if (!isAuthenticated) {
+    window.location.href = "/";
+  }
 }
 
 await toast.init();
@@ -44,7 +45,10 @@ const app = createApp({
   logout() {
     return logout(store);
   },
-  debugStore
+  debugStore,
+  mounted() {
+    // Initialize any page-specific functionality here
+  }
 });
 
 export { app };
