@@ -6,6 +6,7 @@ import { getUserData, logout, verifyAuth, checkAndGetToken } from "/src/utils/us
 import { injectStyles } from "@/utils/injectStyles.js";
 import Quill from "quill";
 import { getHeaders, getCurrentBaseUrl } from '/src/utils/constants.js';
+import { initUploadcare } from "/src/utils/uploadcare.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -26,14 +27,14 @@ function createQuillEditor(selector, placeholderText) {
   return new Quill(selector, options);
 }
 
-const editorBrandServiceOrProduct = createQuillEditor(
-  "#editorBrandServiceOrProduct",
+const quillCustomPrompt = createQuillEditor(
+  "#quillCustomPrompt",
   `e.g. Apple sells premium phones and computers. It is known for a high attention to detail, polish, and user experience. The target audience is consumers who value style and simplicity in their tech, including young adults and professionals willing to pay more for top-notch quality.`
 );
 
 console.log(
   "Checking -> : quill editor of brandserviceorproduct at top",
-  editorBrandServiceOrProduct
+  quillCustomPrompt
 );
 
 
@@ -258,18 +259,18 @@ const initCheckboxStates = () => {
 };
 
 
-editorBrandServiceOrProduct.on(
+quillCustomPrompt.on(
   "text-change",
   function (delta, oldDelta, source) {
     store.fields.brand_service_or_product =
-      editorBrandServiceOrProduct.container.children[0].innerHTML;
+      quillCustomPrompt.container.children[0].innerHTML;
 
     console.log(
       "Checking -> : inside textchange of brandserviceorproduct quill",
-      editorBrandServiceOrProduct.container.children[0].innerHTML
+      quillCustomPrompt.container.children[0].innerHTML
     );
     // Assuming you want to count text length, not HTML length:
-    const textLength = editorBrandServiceOrProduct.getText().trim().length; // trim() to remove trailing spaces/newlines
+    const textLength = quillCustomPrompt.getText().trim().length; // trim() to remove trailing spaces/newlines
 
     // Calculate width based on text length (customize this logic as needed)
     let widthPercentage = Math.min(100, (textLength / 250) * 100); // Caps at 100%
@@ -290,7 +291,7 @@ editorBrandServiceOrProduct.on(
 
 console.log(
   "Checking -> : quill editor of brandserviceorproduct",
-  editorBrandServiceOrProduct
+  quillCustomPrompt
 );
 
 /*--initializers----------------------------------------------------------*/
@@ -351,7 +352,7 @@ const app = createApp({
       ...props,
       store,
       fields: store.fields,
-      requiresAuth: true
+      requiresAuth: false
     });
   },
   async getUserData() {
@@ -362,6 +363,22 @@ const app = createApp({
   },
   debugStore,
   mounted() {
+    // Initialize Uploadcare with proper configuration
+    initUploadcare({
+      contextName: 'create-attachments',
+      multiple: true,
+      selector: '[role="uploadcare-uploader"]',
+      onUpload: (fileInfo) => {
+        console.log('Upload completed:', fileInfo);
+        if (fileInfo?.cdnUrl) {
+          store.fields.attachments = fileInfo.cdnUrl;
+        }
+      }
+    }).catch(error => {
+      console.error('Uploadcare initialization failed:', error);
+      toast.error('Failed to initialize file uploader');
+    });
+
     // Initialize masonry
     injectStyles();
     initMasonry();
