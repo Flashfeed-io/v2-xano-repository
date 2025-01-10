@@ -47,6 +47,8 @@ export const initUploadcare = async (store) => {
       config = document.createElement('uc-config');
       config.setAttribute('ctx-name', 'ff-uploader');
       config.setAttribute('pubkey', 'cdf8f29ff35c6292f1f0');
+      config.setAttribute('multiple', 'false');
+      config.setAttribute('accept', 'image/*');
       document.body.appendChild(config);
     }
 
