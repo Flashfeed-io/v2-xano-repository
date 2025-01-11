@@ -32,7 +32,7 @@ export const API_BASE_URL = {
 };
 
 // Get the current base URL based on environment
-export const getCurrentBaseUrl = () => {
+export const getCurrentXanoUrl = () => {
   const url = API_BASE_URL[CURRENT_ENV];
   console.log('[DEBUG] Using base URL:', url);
   return url;

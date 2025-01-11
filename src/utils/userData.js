@@ -1,4 +1,4 @@
-import { getHeaders, getCurrentBaseUrl } from './constants.js';
+import { getHeaders, getCurrentXanoUrl } from './constants.js';
 
 // Reusable token check function
 export const checkAndGetToken = (store, redirectOnFailure = true) => {
@@ -29,7 +29,7 @@ export const verifyAuth = async (store) => {
   if (!token) return false;
 
   try {
-    const url = `${getCurrentBaseUrl()}/auth/me`;
+    const url = `${getCurrentXanoUrl()}/auth/me`;
     const headers = getHeaders(token);
     
     console.log("[DEBUG] verifyAuth request:", {
@@ -88,7 +88,7 @@ export const logout = async (store) => {
   }
 
   try {
-    const response = await fetch(`${getCurrentBaseUrl()}/auth/logout`, {
+    const response = await fetch(`${getCurrentXanoUrl()}/auth/logout`, {
       method: "POST",
       headers: getHeaders(token)
     });

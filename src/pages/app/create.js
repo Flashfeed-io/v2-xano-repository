@@ -5,8 +5,9 @@ import { toast } from "/src/utils/toastManager.js";
 import { getUserData, logout, verifyAuth, checkAndGetToken } from "/src/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
 import Quill from "quill";
-import { getHeaders, getCurrentBaseUrl } from '/src/utils/constants.js';
+import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
+import { initDatepicker } from "/src/utils/datepicker.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -20,7 +21,7 @@ const quillOptions = {
   // placeholder: 'This is a placeholder', // You can set a default or leave this out
 };
 
-// Function to create a new Quill editor with a custom placeholder
+// create quill editor
 function createQuillEditor(selector, placeholderText) {
   // Clone the quillOptions to avoid mutations
   const options = { ...quillOptions, placeholder: placeholderText };
@@ -32,13 +33,9 @@ const quillCustomPrompt = createQuillEditor(
   `e.g. Apple sells premium phones and computers. It is known for a high attention to detail, polish, and user experience. The target audience is consumers who value style and simplicity in their tech, including young adults and professionals willing to pay more for top-notch quality.`
 );
 
-console.log(
-  "Checking -> : quill editor of brandserviceorproduct at top",
-  quillCustomPrompt
-);
 
 
-/*--main code----------------------------------------------------------*/
+/*--store----------------------------------------------------------*/
 const store = reactive({
   user: {},
   token: (() => {
@@ -74,6 +71,7 @@ const store = reactive({
     title: "",
     folder_id: "",
     status: "To Do",
+    due_date: new Date().toISOString().split('T')[0],
     video_budget: 0,
     description: "",
     //helpers
@@ -113,7 +111,7 @@ const store = reactive({
     //inspiration
     selectedInspiration: {
       id: "",
-      script: {},
+      script: [],
     },
     importedInspirationList: [],
     //script
@@ -127,18 +125,20 @@ const store = reactive({
   },
 });
 
+
+
+
+/*--main code----------------------------------------------------------*/
+//import from url
 async function importFromUrl(url) {
   store.isImporting = true;
-  console.log('[DEBUG] Starting importFromUrl with URL:', url);
   
   try {
     const token = checkAndGetToken(store);
     if (!token) return;
 
-    const requestUrl = `${getCurrentBaseUrl()}/import_url`;
+    const requestUrl = `${getCurrentXanoUrl()}/import_url`;
     const requestBody = { inputUrl: url };
-    console.log('[DEBUG] Making request to:', requestUrl);
-    console.log('[DEBUG] Request body:', requestBody);
     
     const response = await fetch(requestUrl, {
       method: 'POST',
@@ -146,18 +146,15 @@ async function importFromUrl(url) {
       body: JSON.stringify(requestBody)
     });
 
-    console.log('[DEBUG] Response status:', response.status);
-    console.log('[DEBUG] Response headers:', Object.fromEntries(response.headers));
-
     if (!response.ok) {
       const errorData = await response.json();
       console.error('[DEBUG] Error response:', errorData);
       if (response.status === 401 || response.status === 403) {
-        alert('Your session has expired. Please log in again.');
+        toast.error('Your session has expired. Please log in again.');
         window.location.href = "/login";
         return;
       }
-      alert('Failed to import from URL: ' + (errorData.message || 'Unknown error'));
+      toast.error('Failed to import from URL: ' + (errorData.message || 'Unknown error'));
       throw new Error(errorData.message || 'Failed to import from URL');
     }
 
@@ -166,15 +163,64 @@ async function importFromUrl(url) {
     return data;
   } catch (error) {
     console.error('[DEBUG] Error in importFromUrl:', error);
-    alert('Error importing from URL: ' + error.message);
+    toast.error('Error importing from URL: ' + error.message);
     throw error;
   } finally {
     store.isImporting = false;
   }
 }
 
-/*--reactivity functions----------------------------------------------------------*/
 
+//load or new profile
+async function handleProfile(action) {
+  console.log('[DEBUG] Starting handleProfile with action:', action);
+  
+  if (action === "new") {
+    try {
+      const token = checkAndGetToken(store);
+      if (!token) return;
+
+      const requestUrl = `${getCurrentXanoUrl()}/profile/new`;
+      
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: getHeaders(token),
+        body: JSON.stringify({})
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[DEBUG] Error response:', errorData);
+        toast.error('Failed to create new profile: ' + (errorData.message || 'Unknown error'));
+        throw new Error(errorData.message || 'Failed to create new profile');
+      }
+
+      const data = await response.json();
+      console.log('[DEBUG] Success response:', data);
+    } catch (error) {
+      console.error('[DEBUG] Error in handleProfile:', error);
+      toast.error('Error handling profile: ' + error.message);
+      throw error;
+    }
+  } else if (action === "load") {
+    console.log('[DEBUG] Load profile action triggered');
+  }
+  store.sync.helpers.toggle_show_profile = true;
+  
+  const inputs = document.querySelectorAll('.cc_contenteditable-input');
+  inputs.forEach(input => {
+    input.classList.add('default-hover-state');
+    
+    const removeHoverState = () => {
+      input.classList.remove('default-hover-state');
+      input.removeEventListener('mouseenter', removeHoverState);
+    };
+    
+    input.addEventListener('mouseenter', removeHoverState);
+  });
+}
+
+/*--reactivity functions----------------------------------------------------------*/
 
 //script
 const calculateStartTime = () => {
@@ -347,6 +393,13 @@ function initMasonry() {
 /*--mount----------------------------------------------------------*/
 const app = createApp({
   store,
+  editableContent: '',
+  
+  updateContent(event) {
+    console.log('Content updated:', event.target.textContent);
+    this.editableContent = event.target.textContent;
+  },
+  
   WebflowFormComponent(props) {
     return WebflowFormComponent({
       ...props,
@@ -362,6 +415,30 @@ const app = createApp({
     return logout(store);
   },
   debugStore,
+  handleStatusClick(status) {
+    console.log('Previous status:', store.sync.status);
+    Object.assign(store.sync, { status });
+    console.log('Status clicked:', status);
+    console.log('New status:', store.sync.status);
+    console.log('Full sync object:', store.sync);
+  },
+  handleContentEditable($el) {
+    console.log('handleContentEditable called');
+    if (!$el) return;
+    
+    // Only set up the input listener once
+    if (!$el._effectSetup) {
+      $el._effectSetup = true;
+      $el.addEventListener('input', (e) => {
+        if (this.store.sync.selectedProfile) {
+          this.store.sync.selectedProfile.brand = e.target.textContent;
+        }
+      });
+    }
+
+    // Sync from store to element (like v-model)
+    $el.textContent = this.store.sync.selectedProfile?.brand || '';
+  },
   mounted() {
     // Initialize Uploadcare with proper configuration
     initUploadcare({
@@ -382,8 +459,25 @@ const app = createApp({
     // Initialize masonry
     injectStyles();
     initMasonry();
-    // Initialize checkbox states
+
     initCheckboxStates();
+    setTimeout(() => {
+      const elements = document.querySelectorAll('[cc_data-datepicker="true"]');
+      console.log('🔍 About to initialize datepicker');
+      console.log('Found elements:', elements);
+      
+      if (elements.length > 0) {
+        initDatepicker('[cc_data-datepicker="true"]', {
+          dateFormat: "m/d/Y",
+          altFormat: "m/d/Y",
+          allowInput: true,
+          clickOpens: true,
+          static: true
+        });
+      } else {
+        console.warn('No datepicker elements found');
+      }
+    }, 0);
   },
   addAssetFile,
   removeAssetFile,
@@ -391,7 +485,8 @@ const app = createApp({
   updateGenerateScript,
   updateGenerateAction,
   updateGenerateText,
-  importFromUrl
+  importFromUrl,
+  handleProfile,
 });
 
 export { app };
