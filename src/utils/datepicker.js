@@ -1,4 +1,5 @@
 import "/node_modules/flatpickr/dist/flatpickr.min.css";
+import "/src/styles/custom-datepicker.css";
 import flatpickr from "flatpickr";
 
 /**
@@ -22,9 +23,9 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
   const defaultOptions = {
     // Basic Settings
     dateFormat: "m/d/Y",
-    defaultDate: null,
+    defaultDate: "2025-01-12",
     altInput: true,
-    altFormat: "m/d/Y",
+    altFormat: "F Y",
     animate: true,
     
     // UX Enhancements
@@ -36,6 +37,8 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     // Visual Settings
     showMonths: 1,
     position: "auto",
+    minDate: "2025-01-12",
+    monthSelectorType: "static",
     
     // Callbacks
     onOpen: function(selectedDates, dateStr, instance) {
@@ -45,6 +48,10 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     
     onChange: function(selectedDates, dateStr, instance) {
       console.log('📅 Date changed:', { selectedDates, dateStr });
+      // Update store
+      if (window.store && window.store.sync) {
+        window.store.sync.due_date = dateStr;
+      }
       // Trigger change event for Webflow compatibility
       instance.element.dispatchEvent(new Event('change', { bubbles: true }));
       instance.element.dispatchEvent(new Event('input', { bubbles: true }));
