@@ -71,7 +71,7 @@ const store = reactive({
     title: "",
     folder_id: "",
     status: "To Do",
-    due_date: new Date().toISOString().split('T')[0],
+    due_date: new Date().toLocaleDateString('en-CA'),
     video_budget: 0,
     description: "",
     //helpers
@@ -517,17 +517,11 @@ const app = createApp({
       console.log('Found elements:', elements);
       
       if (elements.length > 0) {
-        initDatepicker('[cc_data-datepicker="true"]', {
-          dateFormat: "m/d/Y",
-          altFormat: "m/d/Y",
-          allowInput: true,
-          clickOpens: true,
-          static: true
-        });
+        initDatepicker('[cc_data-datepicker="true"]', {}, store);
       } else {
         console.warn('No datepicker elements found');
       }
-    }, 0);
+    }, 50);
   },
   addAssetFile,
   removeAssetFile,

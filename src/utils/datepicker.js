@@ -6,9 +6,10 @@ import flatpickr from "flatpickr";
  * Initialize a datepicker with enhanced features
  * @param {string} selector - CSS selector for the datepicker element
  * @param {Object} customOptions - Override default options
+ * @param {Object} store - Store object to update on date change
  * @returns {Object} Flatpickr instance
  */
-export function initDatepicker(selector = '[cc_data-datepicker="true"]', customOptions = {}) {
+export function initDatepicker(selector = '[cc_data-datepicker="true"]', customOptions = {}, store = null) {
   console.log('🔍 Initializing datepicker with selector:', selector);
   
   // Check if elements exist
@@ -20,12 +21,20 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     return null;
   }
 
+  // Get today's date and format it as YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Calculate max date (1 year from today)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  const maxDateStr = maxDate.toISOString().split('T')[0];
+
   const defaultOptions = {
     // Basic Settings
-    dateFormat: "m/d/Y",
-    defaultDate: "2025-01-12",
+    dateFormat: "Y-m-d",
+    defaultDate: today,
     altInput: true,
-    altFormat: "F Y",
+    altFormat: "F j, Y",
     animate: true,
     
     // UX Enhancements
@@ -37,7 +46,8 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     // Visual Settings
     showMonths: 1,
     position: "auto",
-    minDate: "2025-01-12",
+    minDate: today,
+    maxDate: maxDateStr,
     monthSelectorType: "static",
     
     // Callbacks
@@ -48,10 +58,12 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     
     onChange: function(selectedDates, dateStr, instance) {
       console.log('📅 Date changed:', { selectedDates, dateStr });
-      // Update store
-      if (window.store && window.store.sync) {
-        window.store.sync.due_date = dateStr;
+      // Update store if provided
+      if (store?.sync) {
+        console.log('Updating store with date:', dateStr);
+        store.sync.due_date = dateStr;
       }
+      console.log('Triggering change event');
       // Trigger change event for Webflow compatibility
       instance.element.dispatchEvent(new Event('change', { bubbles: true }));
       instance.element.dispatchEvent(new Event('input', { bubbles: true }));
