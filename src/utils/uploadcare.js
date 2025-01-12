@@ -67,15 +67,33 @@ export const initUploadcare = async (store) => {
 
     // Handle file upload events
     uploader.addEventListener('change', (e) => {
+      console.log('Change event:', e);
       const fileInfo = e.detail;
-      console.log('Upload completed:', fileInfo);
-      
       if (fileInfo?.cdnUrl) {
-        // Update the store field if it exists
+        store.sync.selectedProfile.image = fileInfo.cdnUrl;
+      }
+    });
+
+    // Handle successful uploads (both from computer and URL)
+    uploader.addEventListener('common-upload-success', (e) => {
+      console.log('Upload success:', e);
+      const files = e.detail.successEntries;
+      if (files && files.length > 0) {
+        const fileInfo = files[0];
+        if (fileInfo?.cdnUrl) {
+          store.sync.selectedProfile.image = fileInfo.cdnUrl;
+        }
+      }
+    });
+
+    // Handle URL changes (for transformations)
+    uploader.addEventListener('file-url-changed', (e) => {
+      console.log('URL changed:', e);
+      const fileInfo = e.detail;
+      if (fileInfo?.cdnUrl) {
         if (store.fields) {
           store.fields.attachments = fileInfo.cdnUrl;
         } else {
-          // If store.fields doesn't exist, add it directly to store
           store.attachments = fileInfo.cdnUrl;
         }
       }

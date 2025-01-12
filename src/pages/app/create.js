@@ -93,7 +93,7 @@ const store = reactive({
       toggle_key_highlights: true,
       id: "",
       image: "",
-      brand: "",
+      brand: "Brand",
       product: "",
       import_link: "",
       summary: "",
@@ -242,6 +242,15 @@ async function handleProfile(action) {
 
 /*--reactivity functions----------------------------------------------------------*/
 
+// Background image style
+const getBackgroundStyle = (url) => {
+  let styles = {};
+  if (url !== "") {
+    styles = { backgroundImage: `url(${url})` };
+  }
+  return styles;
+};
+
 //script
 const calculateStartTime = () => {
   if (!store.sync.script || store.sync.script.length === 0) return 0;
@@ -306,6 +315,49 @@ const updateGenerateText = (value) => {
 const addAssetFile = () => {
     store.sync.selectedProfile.asset_files.push("");
 };
+
+const setProductVisible = (triggerElement) => {
+  // Get the parent container based on the custom attribute
+  const parentContainers = document.querySelectorAll('[cc_data-parent="true"]');
+
+  // Toggle visibility for all instances
+  parentContainers.forEach((container) => {
+    const productElement = container.querySelector('[data-name="Product"]');
+    const addProductElement = container.querySelector('[cc_data="add-product"]');
+
+    if (productElement && addProductElement) {
+      // Make all product elements visible
+      productElement.style.display = 'block';
+
+      // Hide all add-product elements
+      addProductElement.style.display = 'none';
+    }
+  });
+
+  // Focus the sibling product element in the same parent container as the clicked button
+  const parentContainer = triggerElement.closest('[cc_data-parent="true"]');
+  if (parentContainer) {
+    const siblingProductElement = parentContainer.querySelector('[data-name="Product"]');
+    if (siblingProductElement) {
+      siblingProductElement.focus();
+    } else {
+      console.error('Sibling product element not found');
+    }
+  } else {
+    console.error('Parent container not found');
+  }
+};
+
+// Example usage: add event listeners for each "add-product" button
+document.querySelectorAll('[cc_data="add-product"]').forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault(); // Prevent default link behavior
+    setProductVisible(button);
+  });
+});
+
+
+
 
 const removeAssetFile = (index) => {
     store.sync.selectedProfile.asset_files.splice(index, 1);
@@ -449,17 +501,7 @@ const app = createApp({
   },
   mounted() {
     // Initialize Uploadcare with proper configuration
-    initUploadcare({
-      contextName: 'create-attachments',
-      multiple: true,
-      selector: '[role="uploadcare-uploader"]',
-      onUpload: (fileInfo) => {
-        console.log('Upload completed:', fileInfo);
-        if (fileInfo?.cdnUrl) {
-          store.fields.attachments = fileInfo.cdnUrl;
-        }
-      }
-    }).catch(error => {
+    initUploadcare(store).catch(error => {
       console.error('Uploadcare initialization failed:', error);
       toast.error('Failed to initialize file uploader');
     });
@@ -495,6 +537,8 @@ const app = createApp({
   updateGenerateText,
   importFromUrl,
   handleProfile,
+  getBackgroundStyle,
+  setProductVisible
 });
 
 export { app };
