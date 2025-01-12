@@ -207,16 +207,36 @@ async function handleProfile(action) {
   }
   store.sync.helpers.toggle_show_profile = true;
   
+
+  // Content editable inputs
   const inputs = document.querySelectorAll('.cc_contenteditable-input');
   inputs.forEach(input => {
-    input.classList.add('default-hover-state');
+    console.log('Setting up input:', input);
     
-    const removeHoverState = () => {
-      input.classList.remove('default-hover-state');
-      input.removeEventListener('mouseenter', removeHoverState);
-    };
+    // Set initial text length
+    const initialText = input.textContent;
+    const initialLength = initialText ? initialText.length + 1 : 1;
+    console.log('Initial text:', initialText, 'length:', initialLength);
+    input.style.setProperty('--text-length', initialLength);
     
-    input.addEventListener('mouseenter', removeHoverState);
+    // Update text length and store on input
+    input.addEventListener('input', (e) => {
+      const newText = e.target.textContent;
+      const newLength = newText ? newText.length + 1 : 1;
+      console.log('Input changed. New text:', newText, 'new length:', newLength);
+      input.style.setProperty('--text-length', newLength);
+
+      // Update store based on input id or placeholder
+      if (this.store.sync.selectedProfile) {
+        if (e.target.placeholder === 'Brand Name' || e.target.dataset.name === 'Brand') {
+          console.log('Updating brand in store:', newText);
+          this.store.sync.selectedProfile.brand = newText;
+        } else if (e.target.placeholder === 'Product' || e.target.dataset.name === 'Product') {
+          console.log('Updating product in store:', newText);
+          this.store.sync.selectedProfile.product = newText;
+        }
+      }
+    });
   });
 }
 
@@ -416,28 +436,16 @@ const app = createApp({
   },
   debugStore,
   handleStatusClick(status) {
-    console.log('Previous status:', store.sync.status);
     Object.assign(store.sync, { status });
-    console.log('Status clicked:', status);
-    console.log('New status:', store.sync.status);
-    console.log('Full sync object:', store.sync);
   },
-  handleContentEditable($el) {
-    console.log('handleContentEditable called');
+  updateInputWidth($el) {
     if (!$el) return;
-    
-    // Only set up the input listener once
-    if (!$el._effectSetup) {
-      $el._effectSetup = true;
-      $el.addEventListener('input', (e) => {
-        if (this.store.sync.selectedProfile) {
-          this.store.sync.selectedProfile.brand = e.target.textContent;
-        }
-      });
+    const text = $el.textContent;
+    if (!text || text === '') {
+      $el.style.width = '3rem';
+    } else {
+      $el.style.setProperty('--text-length', text.length + 1);
     }
-
-    // Sync from store to element (like v-model)
-    $el.textContent = this.store.sync.selectedProfile?.brand || '';
   },
   mounted() {
     // Initialize Uploadcare with proper configuration

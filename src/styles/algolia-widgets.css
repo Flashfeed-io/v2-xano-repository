@@ -300,7 +300,6 @@
   margin-top: 1rem;
 }
 
-
 .ais-InfiniteHits-loadMore:hover {
   background-color: #47a6ff;
 }
@@ -309,23 +308,35 @@
   display: none;
 }
 
+/* || Content editable input styles */
 
-/* Initial state (closed) */
-.alg_hit-dropdown-menu {
-  transform: translate3d(0px, 8px, 0px) scale3d(0.7, 0.7, 1);
-  opacity: 0;
-  display: none;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+.cc_contenteditable-input {
+    width: var(--text-length, 5rem);
+    white-space: normal;
+    overflow: visible;
 }
 
-/* Open state */
-.alg_hit-dropdown-menu.w--open {
-  transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1);
-  opacity: 1;
-  display: block;
+.cc_contenteditable-input:hover {
+    width: var(--text-length, 7rem);
 }
 
-/* Root container for hits */
+.cc_contenteditable-input:focus-visible {
+  outline: none!important;
+  box-shadow: 0 0 0 1px var(--2022-form--skills--button-border-color), 0 0 0 0 #45daf86e;
+}
+
+.default-hover-state {
+    background-position: 7px;
+    padding-left: 2rem;
+}
+
+#measure-width {
+    visibility: hidden !important;
+    position: absolute !important;
+    pointer-events: none !important;
+}
+
+/* || Root container for hits */
 
 .webflow-hits-root {
   display: flex;
@@ -376,8 +387,6 @@
     width: 100%; /* 1 column for mobile */
   }
 }
-
-
 
 /* || Pagination component */
 
