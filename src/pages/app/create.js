@@ -8,6 +8,7 @@ import Quill from "quill";
 import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
+import { initCleave } from "/src/utils/cleave.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -68,10 +69,11 @@ const store = reactive({
   sync: {
     //main
     id: "",
+    lastSavedDate: new Date().toISOString().split('T')[0],
     title: "",
     folder_id: "",
     status: "To Do",
-    due_date: new Date().toLocaleDateString('en-CA'),
+    due_date: new Date().toISOString().split('T')[0],
     video_budget: 0,
     description: "",
     //helpers
@@ -120,7 +122,7 @@ const store = reactive({
     copilot: {
       virality: 0,
       direct_response: 0,
-      suggestions: {}
+      suggestions: []
     }
   },
 });
@@ -500,10 +502,16 @@ const app = createApp({
     }
   },
   mounted() {
+    console.log('Mounting component...');
+    
+    // Initialize Cleave.js formatting
+    initCleave().catch(error => {
+        console.error('Cleave initialization failed:', error);
+    });
+
     // Initialize Uploadcare with proper configuration
     initUploadcare(store).catch(error => {
-      console.error('Uploadcare initialization failed:', error);
-      toast.error('Failed to initialize file uploader');
+        console.error('Uploadcare initialization failed:', error);
     });
 
     // Initialize masonry
@@ -522,6 +530,15 @@ const app = createApp({
         console.warn('No datepicker elements found');
       }
     }, 50);
+
+    // Initialize Cleave.js for budget formatting
+    const budgetInput = document.querySelector('[cc_data="cleave-currency"]');
+    if (budgetInput && window.Cleave) {
+        new window.Cleave(budgetInput, {
+            numeral: true,
+            numeralThousandsGroupStyle: 'thousand'
+        });
+    }
   },
   addAssetFile,
   removeAssetFile,

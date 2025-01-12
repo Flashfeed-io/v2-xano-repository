@@ -4,7 +4,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     padding: 12px;
-    width: 288px !important;
+    width: 280px !important;
     box-sizing: border-box;
     transition: all 200ms ease;
 }
@@ -38,14 +38,33 @@
 
 }
 
+
+.flatpickr-weekdaycontainer {
+    padding: 3px;
+    column-gap: 3px;
+    background-color: #fafafa;
+    border-radius: 6px;
+}
+
+
 .cur-year {
     font-weight: 500;
 }
 
 .flatpickr-day.today {
+    background: #f1ebff;
     border-color: transparent;
-    color: #e6deff!important;
+    color: #9872ff!important;
     font-weight: 500;
+}
+
+.flatpickr-day.selected {
+    color: #e5dbff!important;
+} 
+
+.flatpickr-day.today:hover, .flatpickr-day.today:focus {
+   background: #f7f4ff;
+   border-color: transparent;
 }
 
 .flatpickr-day.today:hover {
@@ -78,7 +97,7 @@
 .flatpickr-current-month .numInputWrapper {
     background: #f5f5f5;
     border-radius: 6px;
-    padding: 2px 3px;
+    padding: 0 0 0 1px;
     font-size: 0.85rem;
     color: #48546e;
     margin-bottom: -3px;
@@ -209,13 +228,13 @@
     border-radius: 10px;
     color: #333;
     font-size: 14px;
-    height: 32px;
-    width: calc(100% / 7 - 2px);
-    line-height: 30px;
-    margin: 1px;
+    height: 31px;
+    width: calc((100% / 7) - 4px);
+    line-height: 29px;
+    margin: 2px;
     max-width: none;
     transition: all 200ms ease;
-    flex: 0 0 calc(100% / 7 - 2px);
+    flex: 0 0 calc((100% / 7) - 4px);
 }
 
 .flatpickr-day.selected {
@@ -267,7 +286,7 @@
 
 /* Fix width overflow */
 .flatpickr-calendar.animate.open {
-    width: 288px !important;
+    width: 280px !important;
 }
 
 .flatpickr-current-month .flatpickr-monthDropdown-months {

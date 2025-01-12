@@ -23,6 +23,7 @@
     "vite": "^3.1.0"
   },
   "dependencies": {
+    "cleave.js": "^1.6.0",
     "flatpickr": "^4.6.13",
     "imagesloaded": "^5.0.0",
     "masonry-layout": "^4.2.2",
