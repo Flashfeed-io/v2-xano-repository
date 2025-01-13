@@ -41,65 +41,42 @@ export const initUploadcare = async (store) => {
   try {
     const UC = await loadFileUploader();
 
-    // Add config element if it doesn't exist
-    let config = document.querySelector('uc-config[ctx-name="ff-uploader"]');
-    if (!config) {
-      config = document.createElement('uc-config');
-      config.setAttribute('ctx-name', 'ff-uploader');
-      config.setAttribute('pubkey', 'cdf8f29ff35c6292f1f0');
-      config.setAttribute('multiple', 'false');
-      config.setAttribute('accept', 'image/*');
-      document.body.appendChild(config);
+    // Get the context provider
+    const ctx = document.querySelector('uc-upload-ctx-provider[ctx-name="ff-uploader"]');
+    if (!ctx) {
+      throw new Error('Upload context provider not found');
     }
 
-    // Create or get uploader element
-    let uploader = document.querySelector('uc-file-uploader-regular[ctx-name="ff-uploader"]');
-    if (!uploader) {
-      uploader = document.createElement('uc-file-uploader-regular');
-      uploader.setAttribute('ctx-name', 'ff-uploader');
-      
-      // Replace old uploader if it exists
-      const oldUploader = document.querySelector('[role="uploadcare-uploader"]');
-      if (oldUploader) {
-        oldUploader.parentNode.replaceChild(uploader, oldUploader);
-      }
-    }
-
-    // Handle file upload events
-    uploader.addEventListener('change', (e) => {
-      console.log('Change event:', e);
+    // Handle file selection/change
+    ctx.addEventListener('change', (e) => {
+      console.log('Files selected:', e.detail);
       const fileInfo = e.detail;
-      if (fileInfo?.cdnUrl) {
-        store.sync.selectedProfile.image = fileInfo.cdnUrl;
-      }
-    });
-
-    // Handle successful uploads (both from computer and URL)
-    uploader.addEventListener('common-upload-success', (e) => {
-      console.log('Upload success:', e);
-      const files = e.detail.successEntries;
-      if (files && files.length > 0) {
-        const fileInfo = files[0];
-        if (fileInfo?.cdnUrl) {
+      if (fileInfo.cdnUrl) {
+        if (store?.sync?.selectedProfile) {
           store.sync.selectedProfile.image = fileInfo.cdnUrl;
         }
       }
     });
 
-    // Handle URL changes (for transformations)
-    uploader.addEventListener('file-url-changed', (e) => {
-      console.log('URL changed:', e);
+    // Handle successful upload
+    ctx.addEventListener('file-upload-success', (e) => {
+      console.log('Upload completed:', e);
       const fileInfo = e.detail;
-      if (fileInfo?.cdnUrl) {
-        if (store.fields) {
-          store.fields.attachments = fileInfo.cdnUrl;
-        } else {
-          store.attachments = fileInfo.cdnUrl;
+      if (fileInfo.cdnUrl) {
+        if (store?.sync?.selectedProfile) {
+          store.sync.selectedProfile.image = fileInfo.cdnUrl;
         }
       }
     });
 
-    return uploader;
+
+    // Handle file removal
+    ctx.addEventListener('file-removed', (e) => {
+      console.log('File removed:', e.detail);
+          store.sync.selectedProfile.image = "";
+    });
+
+    return ctx;
   } catch (error) {
     console.error('Failed to initialize File Uploader:', error);
     throw error;

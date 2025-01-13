@@ -9,6 +9,7 @@ import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
 import { initCleave } from "/src/utils/cleave.js";
+import { loadECharts, initGaugeChart } from "/src/utils/apachechart.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -33,7 +34,6 @@ const quillCustomPrompt = createQuillEditor(
   "#quillCustomPrompt",
   `e.g. Apple sells premium phones and computers. It is known for a high attention to detail, polish, and user experience. The target audience is consumers who value style and simplicity in their tech, including young adults and professionals willing to pay more for top-notch quality.`
 );
-
 
 
 /*--store----------------------------------------------------------*/
@@ -120,12 +120,14 @@ const store = reactive({
     script: [],
     //copilot
     copilot: {
+      overall: 0,
       virality: 0,
       direct_response: 0,
       suggestions: []
     }
   },
 });
+
 
 
 
@@ -361,6 +363,7 @@ document.querySelectorAll('[cc_data="add-product"]').forEach((button) => {
 
 
 
+
 const removeAssetFile = (index) => {
     store.sync.selectedProfile.asset_files.splice(index, 1);
 };
@@ -539,6 +542,20 @@ const app = createApp({
             numeralThousandsGroupStyle: 'thousand'
         });
     }
+
+    // Initialize the gauge chart
+    console.log('Starting gauge chart initialization');
+    loadECharts(() => {
+        console.log('ECharts loaded, looking for gauge element');
+        const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
+        console.log('Found gauge element:', gaugeElement);
+        if (gaugeElement) {
+            console.log('Initializing gauge chart with element');
+            initGaugeChart(gaugeElement, 0); // Starting with 0 as initial value
+        } else {
+            console.error('Could not find element with cc_data="copilot-gauge"');
+        }
+    });
   },
   addAssetFile,
   removeAssetFile,

@@ -167,7 +167,8 @@
 .flatpickr-months .flatpickr-prev-month, 
 .flatpickr-months .flatpickr-next-month {
     padding: 6px;
-    fill: #666;
+    fill: none;
+    stroke: #666;
     transition: all 200ms ease;
     height: 34px;
     display: flex;
@@ -178,17 +179,44 @@
     transform: translateY(-50%);
 }
 
+.flatpickr-months .flatpickr-prev-month svg path,
+.flatpickr-months .flatpickr-next-month svg path {
+    display: none;
+}
+
+.flatpickr-months .flatpickr-prev-month:before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.6667 10H3.33333M3.33333 10L8.33333 15M3.33333 10L8.33333 5' stroke='%23666666' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    display: block;
+    opacity: 1;
+    transition: opacity 200ms ease;
+}
+
+.flatpickr-months .flatpickr-next-month:after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.33333 10H16.6667M16.6667 10L11.6667 5M16.6667 10L11.6667 15' stroke='%23666666' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size: contain;
+    display: block;
+    opacity: 1;
+    transition: opacity 200ms ease;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover:after,
+.flatpickr-months .flatpickr-next-month:hover:after {
+    opacity: 0.7;
+}
+
 .flatpickr-months .flatpickr-prev-month {
     left: 0;
 }
 
 .flatpickr-months .flatpickr-next-month {
     right: 0;
-}
-
-.flatpickr-months .flatpickr-prev-month:hover svg, 
-.flatpickr-months .flatpickr-next-month:hover svg {
-    fill: #333;
 }
 
 .flatpickr-weekdays {
