@@ -47,6 +47,30 @@ const store = reactive({
   })(),
   isSaving: false,
   isImporting: false,
+  gaugeElement: null,
+  dataToSync: new Proxy({}, {
+    set(target, property, value) {
+      target[property] = value;
+      // If copilot score changes, update the gauge
+      if (property === 'copilot' && value?.score !== undefined && store.gaugeElement) {
+        setTimeout(() => store.updateGauge(), 0);
+      }
+      return true;
+    }
+  }),
+  updateGauge() {
+    if (!this.gaugeElement) return;
+    
+    const score = this.sync?.copilot?.score;
+    if (score === undefined || score === null) return;
+    
+    createGaugeChart(
+      this.gaugeElement,
+      Number(score),
+      this.sync?.copilot?.avgScore || 75,
+      this.sync?.copilot?.topScore || 79
+    );
+  },
   api: {
     profiles: [
       {
@@ -120,7 +144,7 @@ const store = reactive({
     script: [],
     //copilot
     copilot: {
-      overall: 70,
+      score: 90,
       virality: 0,
       direct_response: 0,
       suggestions: []
@@ -524,12 +548,22 @@ const app = createApp({
     loadD3().then(() => {
       const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
       if (gaugeElement) {
-        createGaugeChart(
-          gaugeElement,
-          store.sync?.copilot?.overall || 78,
-          store.sync?.copilot?.avgScore || 75,
-          store.sync?.copilot?.topScore || 79
-        );
+        store.gaugeElement = gaugeElement;
+        store.updateGauge();
+        
+        // Set up proxy for copilot object
+        if (store.sync && !store.sync.copilot) {
+          store.sync.copilot = {};
+        }
+        store.sync.copilot = new Proxy(store.sync.copilot || {}, {
+          set(target, property, value) {
+            target[property] = value;
+            if (property === 'score') {
+              setTimeout(() => store.updateGauge(), 0);
+            }
+            return true;
+          }
+        });
       }
     }).catch(error => {
       console.error('Failed to initialize gauge chart:', error);
