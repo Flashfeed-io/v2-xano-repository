@@ -458,6 +458,7 @@ await toast.init();
 function initMasonry() {
   console.log('[DEBUG] Render event - Start');
   const hitsList = document.querySelector(".webflow-hits-list");
+  // $(hitsList).css('width', '800px');
   if (!hitsList) {
     console.error('[DEBUG] Hits list container not found');
     return;
@@ -571,7 +572,11 @@ const app = createApp({
 
     // Initialize masonry
     injectStyles();
-    initMasonry();
+    setTimeout(() => {
+      console.log('[DEBUG] masonry set timeout start');
+      initMasonry();
+    }, 1000);
+    
 
     // Initialize checkbox states
     initCheckboxStates();

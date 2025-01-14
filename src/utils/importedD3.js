@@ -43,6 +43,10 @@ function lightenColor(color, amount) {
 
 // Create gauge chart
 export function createGaugeChart(element, value, avgScore, topScore) {
+    // Get the current value from the element if it exists
+    const currentValue = element.querySelector('.gauge-value') ? 
+        parseFloat(element.querySelector('.gauge-value').textContent) : value;
+
     // Clear any existing content
     element.innerHTML = '';
     
@@ -51,36 +55,39 @@ export function createGaugeChart(element, value, avgScore, topScore) {
         margin: 10,
         minValue: 0,
         maxValue: 100,
-        currentValue: value,
-        arcPadding: 6,
+        currentValue: currentValue, // Start from current value
+        targetValue: value,
+        animationDuration: 1000,
+        arcPadding: 3,
         cornerRadius: 5,
         gaugeWidth: 25,
-        dialWidth: 4,
-        dialGap: 3,
+        dialWidth: 1,
+        dialGap: 2,
         sections: [
             { 
-                min: 0, max: 39, 
-                gradient: {
-                    start: '#ff206e',  // Pink
-                    end: '#ff5d20'     // Deep red
-                },
-                tooltip: 'Needs Improvement (0-39)'
+                min: 0, max: 35, 
+                color: '#FF4747',  // Pastel red
+                tooltip: 'Range 1 (0-35)'
             },
             { 
-                min: 40, max: 79, 
-                gradient: {
-                    start: '#ff740e',  // Reddish orange
-                    end: '#FFD700'     // Golden yellow
-                },
-                tooltip: 'Good Progress (40-79)'
+                min: 35, max: 65, 
+                color: '#FD9737',  // Pastel orange
+                tooltip: 'Range 2 (35-65)'
             },
             { 
-                min: 80, max: 100, 
-                gradient: {
-                    start: '#33CC33',  // Bright green
-                    end: '#00A5CF'     // Sky blue
-                },
-                tooltip: 'Excellent (80-100)'
+                min: 65, max: 85, 
+                color: '#FFBB34',  // Pastel yellow
+                tooltip: 'Range 3 (65-85)'
+            },
+            { 
+                min: 85, max: 95, 
+                color: '#30D66D',  // Light green
+                tooltip: 'Range 4 (85-95)'
+            },
+            { 
+                min: 95, max: 100, 
+                color: '#38E1A0',  // Pastel green
+                tooltip: 'Range 5 (95-100)'
             }
         ]
     };
@@ -93,8 +100,11 @@ export function createGaugeChart(element, value, avgScore, topScore) {
     // Create SVG
     const svg = d3.select(element)
         .append('svg')
-        .attr('width', config.size)
-        .attr('height', config.size);
+        .attr('viewBox', `0 0 ${config.size} ${config.size}`)
+        .style('width', '100%')
+        .style('height', '100%')
+        .style('max-width', '300px')
+        .style('max-height', '300px');
 
     // Create tooltip div if it doesn't exist
     const tooltip = d3.select('body').selectAll('.gauge-tooltip').data([0])
@@ -113,38 +123,6 @@ export function createGaugeChart(element, value, avgScore, topScore) {
         .style('opacity', '0')
         .style('transition', 'opacity 0.3s ease');
 
-    // Define gradients
-    const defs = svg.append('defs');
-    config.sections.forEach((section, i) => {
-        // Create gradient for active section
-        const gradient = defs.append('linearGradient')
-            .attr('id', `gradient-${i}`)
-            .attr('gradientUnits', 'userSpaceOnUse')
-            .attr('gradientTransform', 'rotate(90)');
-
-        gradient.append('stop')
-            .attr('offset', '0%')
-            .attr('stop-color', section.gradient.start);
-
-        gradient.append('stop')
-            .attr('offset', '100%')
-            .attr('stop-color', section.gradient.end);
-
-        // Create lighter gradient for inactive section
-        const lightGradient = defs.append('linearGradient')
-            .attr('id', `gradient-light-${i}`)
-            .attr('gradientUnits', 'userSpaceOnUse')
-            .attr('gradientTransform', 'rotate(90)');
-
-        lightGradient.append('stop')
-            .attr('offset', '0%')
-            .attr('stop-color', lightenColor(section.gradient.start, 0.9));
-
-        lightGradient.append('stop')
-            .attr('offset', '100%')
-            .attr('stop-color', lightenColor(section.gradient.end, 0.9));
-    });
-
     const g = svg.append('g')
         .attr('transform', `translate(${config.size/2},${config.size/2})`);
 
@@ -154,143 +132,192 @@ export function createGaugeChart(element, value, avgScore, topScore) {
         .outerRadius(radius)
         .cornerRadius(config.cornerRadius);
 
-    // Create background arcs with splits
-    config.sections.forEach((section, i) => {
-        const startAngleArc = startAngle + (section.min / 100) * (endAngle - startAngle);
-        const endAngleArc = startAngle + (section.max / 100) * (endAngle - startAngle);
+    // Function to update the gauge
+    function updateGauge(value) {
+        config.currentValue = Math.round(value); // Round the value for display
         
-        if (config.currentValue >= section.min && config.currentValue <= section.max) {
-            // Active part of the section
-            const valueAngle = startAngle + (config.currentValue / 100) * (endAngle - startAngle);
-            
-            // Draw colored part
-            g.append('path')
-                .datum({endAngle: valueAngle - config.dialGap / radius})
-                .style('fill', `url(#gradient-${i})`)
-                .style('transition', 'opacity 0.3s ease')
-                .attr('d', arc({
-                    startAngle: startAngleArc + (i === 0 ? 0 : config.arcPadding / radius),
-                    endAngle: valueAngle - config.dialGap / radius
-                }))
-                .on('mouseover', function(event) {
-                    d3.select(this)
-                        .style('opacity', '0.55');
-                    tooltip
-                        .style('visibility', 'visible')
-                        .style('opacity', '1')
-                        .text(section.tooltip);
-                })
-                .on('mousemove', function(event) {
-                    tooltip
-                        .style('top', (event.pageY - 10) + 'px')
-                        .style('left', (event.pageX + 10) + 'px');
-                })
-                .on('mouseout', function() {
-                    d3.select(this)
-                        .style('opacity', '1');
-                    tooltip
-                        .style('opacity', '0')
-                        .style('visibility', 'hidden');
-                });
-            
-            // Draw lighter colored part
-            g.append('path')
-                .datum({endAngle: endAngleArc})
-                .style('fill', `url(#gradient-light-${i})`)
-                .style('transition', 'opacity 0.3s ease')
-                .attr('d', arc({
-                    startAngle: valueAngle + config.dialGap / radius,
-                    endAngle: endAngleArc - (i === config.sections.length - 1 ? 0 : config.arcPadding / radius)
-                }))
-                .on('mouseover', function(event) {
-                    d3.select(this)
-                        .style('opacity', '0.55');
-                    tooltip
-                        .style('visibility', 'visible')
-                        .style('opacity', '1')
-                        .text(section.tooltip);
-                })
-                .on('mousemove', function(event) {
-                    tooltip
-                        .style('top', (event.pageY - 10) + 'px')
-                        .style('left', (event.pageX + 10) + 'px');
-                })
-                .on('mouseout', function() {
-                    d3.select(this)
-                        .style('opacity', '1');
-                    tooltip
-                        .style('opacity', '0')
-                        .style('visibility', 'hidden');
-                });
-        } else {
-            // Draw full section
-            g.append('path')
-                .datum({endAngle: endAngleArc})
-                .style('fill', config.currentValue > section.max ? 
-                    `url(#gradient-${i})` : 
-                    `url(#gradient-light-${i})`)
-                .style('transition', 'opacity 0.3s ease')
-                .attr('d', arc({
-                    startAngle: startAngleArc + (i === 0 ? 0 : config.arcPadding / radius),
-                    endAngle: endAngleArc - (i === config.sections.length - 1 ? 0 : config.arcPadding / radius)
-                }))
-                .on('mouseover', function(event) {
-                    d3.select(this)
-                        .style('opacity', '0.55');
-                    tooltip
-                        .style('visibility', 'visible')
-                        .style('opacity', '1')
-                        .text(section.tooltip);
-                })
-                .on('mousemove', function(event) {
-                    tooltip
-                        .style('top', (event.pageY - 10) + 'px')
-                        .style('left', (event.pageX + 10) + 'px');
-                })
-                .on('mouseout', function() {
-                    d3.select(this)
-                        .style('opacity', '1');
-                    tooltip
-                        .style('opacity', '0')
-                        .style('visibility', 'hidden');
-                });
+        // Remove all existing elements
+        g.selectAll('*').remove();
+
+        // Add hidden span to store current value
+        if (!element.querySelector('.gauge-value')) {
+            const valueSpan = document.createElement('span');
+            valueSpan.className = 'gauge-value';
+            valueSpan.style.display = 'none';
+            element.appendChild(valueSpan);
         }
-    });
+        element.querySelector('.gauge-value').textContent = Math.round(value);
 
-    // Add value text
-    const valueText = g.append('text')
-        .attr('class', 'gauge-value')
-        .attr('y', 0)
-        .attr('text-anchor', 'middle')
-        .style('font-family', 'Arial, sans-serif')
-        .style('font-weight', '600');
+        // Redraw the gauge with new value
+        config.sections.forEach((section, i) => {
+            const startAngleArc = startAngle + (section.min / 100) * (endAngle - startAngle);
+            const endAngleArc = startAngle + (section.max / 100) * (endAngle - startAngle);
+            
+            if (value >= section.min && value <= section.max) {
+                const valueAngle = startAngle + (value / 100) * (endAngle - startAngle);
+                
+                // Draw colored part
+                g.append('path')
+                    .datum({endAngle: valueAngle - config.dialGap / radius})
+                    .style('fill', section.color)
+                    .style('transition', 'opacity 0.3s ease')
+                    .attr('d', arc({
+                        startAngle: startAngleArc + (i === 0 ? 0 : config.arcPadding / radius),
+                        endAngle: valueAngle - config.dialGap / radius
+                    }))
+                    .on('mouseover', function(event) {
+                        d3.select(this).style('opacity', '0.55');
+                        tooltip.style('visibility', 'visible')
+                            .style('opacity', '1')
+                            .text(section.tooltip);
+                    })
+                    .on('mousemove', function(event) {
+                        tooltip.style('top', (event.pageY - 10) + 'px')
+                            .style('left', (event.pageX + 10) + 'px');
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).style('opacity', '1');
+                        tooltip.style('opacity', '0')
+                            .style('visibility', 'hidden');
+                    });
+                
+                // Draw lighter colored part
+                g.append('path')
+                    .datum({endAngle: endAngleArc})
+                    .style('fill', lightenColor(section.color, 0.9))
+                    .style('transition', 'opacity 0.3s ease')
+                    .attr('d', arc({
+                        startAngle: valueAngle + config.dialGap / radius,
+                        endAngle: endAngleArc - (i === config.sections.length - 1 ? 0 : config.arcPadding / radius)
+                    }))
+                    .on('mouseover', function(event) {
+                        d3.select(this).style('opacity', '0.55');
+                        tooltip.style('visibility', 'visible')
+                            .style('opacity', '1')
+                            .text(section.tooltip);
+                    })
+                    .on('mousemove', function(event) {
+                        tooltip.style('top', (event.pageY - 10) + 'px')
+                            .style('left', (event.pageX + 10) + 'px');
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).style('opacity', '1');
+                        tooltip.style('opacity', '0')
+                            .style('visibility', 'hidden');
+                    });
+            } else {
+                g.append('path')
+                    .datum({endAngle: endAngleArc})
+                    .style('fill', value > section.max ? section.color : lightenColor(section.color, 0.9))
+                    .style('transition', 'opacity 0.3s ease')
+                    .attr('d', arc({
+                        startAngle: startAngleArc + (i === 0 ? 0 : config.arcPadding / radius),
+                        endAngle: endAngleArc - (i === config.sections.length - 1 ? 0 : config.arcPadding / radius)
+                    }))
+                    .on('mouseover', function(event) {
+                        d3.select(this).style('opacity', '0.55');
+                        tooltip.style('visibility', 'visible')
+                            .style('opacity', '1')
+                            .text(section.tooltip);
+                    })
+                    .on('mousemove', function(event) {
+                        tooltip.style('top', (event.pageY - 10) + 'px')
+                            .style('left', (event.pageX + 10) + 'px');
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).style('opacity', '1');
+                        tooltip.style('opacity', '0')
+                            .style('visibility', 'hidden');
+                    });
+            }
+        });
 
-    valueText.append('tspan')
-        .text(config.currentValue)
-        .style('font-size', '38px')
-        .style('font-weight', '600')
-        .style('fill', '#333');
+        // Calculate the angle for the current value
+        const valueAngle = startAngle + (value / 100) * (endAngle - startAngle);
 
-    valueText.append('tspan')
-        .text('/100')
-        .style('font-size', '26px')
-        .style('font-weight', '400')
-        .style('fill', '#666');
+        // Add the dial line
+        const dialExtension = config.gaugeWidth * 0.4; // How much to extend beyond the gauge
+        const dialGap = config.dialGap; // Use the config value for consistency
+        const dialColor = '#120F23';
 
-    // Add scores text
-    const scoresText = g.append('text')
-        .attr('class', 'scores')
-        .attr('y', 40)
-        .attr('text-anchor', 'middle')
-        .style('font-family', 'Arial, sans-serif')
-        .style('font-size', '14px')
-        .style('fill', '#666');
+        g.append('line')
+            .attr('class', 'dial')
+            .attr('x1', 0)
+            .attr('y1', -radius - dialExtension)
+            .attr('x2', 0)
+            .attr('y2', -radius + config.gaugeWidth + dialExtension)
+            .attr('transform', `translate(0,${dialGap}) rotate(${(valueAngle * 180 / Math.PI)})`)
+            .style('stroke', dialColor)
+            .style('stroke-width', '4px')
+            .style('stroke-linecap', 'round')
+            .style('transition', `transform ${config.animationDuration}ms ease-in-out`);
 
-    scoresText.append('tspan')
-        .text(`Avg ≠ ${avgScore}`)
-        .attr('x', -40);
+        // Add value text
+        const valueText = g.append('text')
+            .attr('class', 'gauge-value')
+            .attr('y', 0)
+            .attr('text-anchor', 'middle')
+            .style('font-family', 'Circularstd book,sans-serif')
+            .style('font-weight', '600');
 
-    scoresText.append('tspan')
-        .text(`Top ↑ ${topScore}`)
-        .attr('x', 40);
+        valueText.append('tspan')
+            .text(Math.round(value))
+            .style('font-size', '46px')
+            .style('font-weight', '600')
+            .style('fill', '#120F23');
+
+        valueText.append('tspan')
+            .text('/100')
+            .style('font-size', '26px')
+            .style('font-weight', '300')
+            .style('fill', '#8A8C93');
+
+        // Add scores text
+        const scoresText = g.append('text')
+            .attr('class', 'scores')
+            .attr('y', 40)
+            .attr('text-anchor', 'middle')
+            .style('font-family', 'Circularstd book,sans-serif')
+            .style('font-size', '14px')
+            .style('fill', '#666');
+
+        scoresText.append('tspan')
+            .text(`Avg ≠ ${avgScore}`)
+            .attr('x', -40);
+
+        scoresText.append('tspan')
+            .text(`Top ↑ ${topScore}`)
+            .attr('x', 40);
+    }
+
+    // Start the animation
+    const startValue = currentValue;
+    const endValue = config.targetValue;
+    const duration = config.animationDuration;
+    const start = Date.now();
+
+    function animate() {
+        const now = Date.now();
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Use easeInOutQuad for smooth animation
+        const easeProgress = progress < 0.5
+            ? 2 * progress * progress
+            : -1 + (4 - 2 * progress) * progress;
+
+        const currentValue = startValue + (endValue - startValue) * easeProgress;
+        updateGauge(currentValue);
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+
+    // Only animate if values are different
+    if (startValue !== endValue) {
+        animate();
+    } else {
+        updateGauge(endValue);
+    }
 }
