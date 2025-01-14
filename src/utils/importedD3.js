@@ -65,30 +65,20 @@ export function createGaugeChart(element, value, avgScore, topScore) {
         dialGap: 2,
         sections: [
             { 
-                min: 0, max: 35, 
-                color: '#FF4747',  // Pastel red
-                tooltip: 'Range 1 (0-35)'
+                min: 0, max: 40, 
+                color: '#F35353', 
+                tooltip: 'Poor (0-40)'
             },
             { 
-                min: 35, max: 65, 
-                color: '#FD9737',  // Pastel orange
-                tooltip: 'Range 2 (35-65)'
+                min: 41, max: 79, 
+                color: '#FD9059', 
+                tooltip: 'Good (41-79)'
             },
             { 
-                min: 65, max: 85, 
-                color: '#FFBB34',  // Pastel yellow
-                tooltip: 'Range 3 (65-85)'
+                min: 80, max: 100, 
+                color: '#30C455',  
+                tooltip: 'Excellent (80-100)'
             },
-            { 
-                min: 85, max: 95, 
-                color: '#30D66D',  // Light green
-                tooltip: 'Range 4 (85-95)'
-            },
-            { 
-                min: 95, max: 100, 
-                color: '#38E1A0',  // Pastel green
-                tooltip: 'Range 5 (95-100)'
-            }
         ]
     };
 

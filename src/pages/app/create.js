@@ -146,6 +146,7 @@ const store = reactive({
     copilot: {
       score: 90,
       virality: 0,
+      virality_radar: [],
       direct_response: 0,
       suggestions: []
     }
@@ -444,13 +445,13 @@ console.log(
 /*--initializers----------------------------------------------------------*/
 const debugStore = StoreDebugger.init(store);
 
-// Initial auth check
-if (store.token) {
-  const isAuthenticated = await verifyAuth(store);
-  if (!isAuthenticated) {
-    window.location.href = "/";
-  }
-}
+// // Initial auth check
+// if (store.token) {
+//   const isAuthenticated = await verifyAuth(store);
+//   if (!isAuthenticated) {
+//     window.location.href = "/";
+//   }
+// }
 
 await toast.init();
 

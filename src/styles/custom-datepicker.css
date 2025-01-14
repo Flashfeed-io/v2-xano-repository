@@ -52,7 +52,7 @@
 }
 
 .flatpickr-day.today {
-    background: #f1ebff;
+    background: #EAEDFFBB;
     border-color: transparent;
     color: #9872ff!important;
     font-weight: 500;
@@ -63,7 +63,7 @@
 } 
 
 .flatpickr-day.today:hover, .flatpickr-day.today:focus {
-   background: #f7f4ff;
+   background: #F8F6FF;
    border-color: transparent;
 }
 
