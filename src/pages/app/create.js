@@ -9,7 +9,7 @@ import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
 import { initCleave } from "/src/utils/cleave.js";
-import { loadECharts, initGaugeChart } from "/src/utils/apachechart.js";
+import { loadD3, createGaugeChart } from "/src/utils/importedD3.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -120,7 +120,7 @@ const store = reactive({
     script: [],
     //copilot
     copilot: {
-      overall: 0,
+      overall: 70,
       virality: 0,
       direct_response: 0,
       suggestions: []
@@ -507,20 +507,39 @@ const app = createApp({
   mounted() {
     console.log('Mounting component...');
     
+    // Initialize Uploadcare with proper configuration
+    initUploadcare(store).catch(error => {
+        console.error('Uploadcare initialization failed:', error);
+    });
+
+    // Initialize datepicker
+    initDatepicker('[cc_data-datepicker="true"]', {}, store);
+
     // Initialize Cleave.js formatting
     initCleave().catch(error => {
         console.error('Cleave initialization failed:', error);
     });
 
-    // Initialize Uploadcare with proper configuration
-    initUploadcare(store).catch(error => {
-        console.error('Uploadcare initialization failed:', error);
+    // Initialize D3 Gauge Chart
+    loadD3().then(() => {
+      const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
+      if (gaugeElement) {
+        createGaugeChart(
+          gaugeElement,
+          store.sync?.copilot?.overall || 78,
+          store.sync?.copilot?.avgScore || 75,
+          store.sync?.copilot?.topScore || 79
+        );
+      }
+    }).catch(error => {
+      console.error('Failed to initialize gauge chart:', error);
     });
 
     // Initialize masonry
     injectStyles();
     initMasonry();
 
+    // Initialize checkbox states
     initCheckboxStates();
     setTimeout(() => {
       const elements = document.querySelectorAll('[cc_data-datepicker="true"]');
@@ -542,20 +561,6 @@ const app = createApp({
             numeralThousandsGroupStyle: 'thousand'
         });
     }
-
-    // Initialize the gauge chart
-    console.log('Starting gauge chart initialization');
-    loadECharts(() => {
-        console.log('ECharts loaded, looking for gauge element');
-        const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
-        console.log('Found gauge element:', gaugeElement);
-        if (gaugeElement) {
-            console.log('Initializing gauge chart with element');
-            initGaugeChart(gaugeElement, 0); // Starting with 0 as initial value
-        } else {
-            console.error('Could not find element with cc_data="copilot-gauge"');
-        }
-    });
   },
   addAssetFile,
   removeAssetFile,
