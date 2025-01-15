@@ -13,11 +13,38 @@ export function createRadarChart(element, data, options = {}) {
         maxValue = 5,
         levels = 5,
         valueFormat = d => d.toFixed(1),
-        color = '#3182ce',
-        backgroundColor = '#f7fafc'
+        color = '#015283',
+        backgroundColor = 'rgba(82, 220, 255, 0.1)',
+        // Array of [top, right, bottom, left] offsets for each point
+        offsets = [
+            [24, 0, 0, 0],    // Top (Laughter)
+            [0, 14, 0, 0],    // Top right (Shock)
+            [0, 14, 0, 0],    // Bottom right (Amazement)
+            [0, 0, 0, 0],    // Bottom (Sentimental)
+            [0, 0, 0, 14],    // Bottom left (Agitation)
+            [0, 0, 0, 14]     // Top left (Intrigue)
+        ]
     } = options;
 
     const chartColor = color; // Use the provided color directly
+
+    // Helper function to apply offsets
+    const applyOffset = (x, y, pointIndex) => {
+        const offset = offsets[pointIndex] || [0, 0, 0, 0];
+        const [top, right, bottom, left] = offset;
+        return {
+            x: x + (right - left),
+            y: y + (bottom - top)
+        };
+    };
+
+    // Helper function to get position for labels and value boxes
+    const getPosition = (i) => {
+        const angle = angleSlice * i - Math.PI/2;
+        let x = rScale(maxValue * 1.2) * Math.cos(angle);
+        let y = rScale(maxValue * 1.2) * Math.sin(angle);
+        return applyOffset(x, y, i);
+    };
 
     // Clear any existing SVG
     d3.select(element).select('svg').remove();
@@ -64,7 +91,7 @@ export function createRadarChart(element, data, options = {}) {
     const radarLine = d3.lineRadial()
         .radius(d => rScale(d.value))
         .angle((d, i) => i * angleSlice)
-        .curve(d3.curveCardinalClosed.tension(0.6));
+        .curve(d3.curveCardinalClosed.tension(0.2));
 
     // Add radar area with gradient
     const gradientId = 'radarGradient-' + Math.random().toString(36).substr(2, 9);
@@ -122,29 +149,27 @@ export function createRadarChart(element, data, options = {}) {
         .append('g')
         .attr('class', 'valueLabel')
         .attr('transform', (d, i) => {
-            const angle = angleSlice * i - Math.PI/2;
-            const x = rScale(maxValue * 1.2) * Math.cos(angle);
-            const y = rScale(maxValue * 1.2) * Math.sin(angle);
-            return `translate(${x},${y})`;
+            const pos = getPosition(i);
+            return `translate(${pos.x},${pos.y})`;
         });
 
     // Add value background
     valueLabels.append('rect')
-        .attr('x', -18)
-        .attr('y', -15) // More top padding
-        .attr('width', 36)
-        .attr('height', 32) // Increased height to accommodate padding
-        .attr('rx', 6) // More rounded corners
+        .attr('x', -20)  // 1px wider on left
+        .attr('y', -17)
+        .attr('width', 40)  // 2px wider total
+        .attr('height', 34)
+        .attr('rx', 6) 
         .style('fill', chartColor)
         .style('fill-opacity', 0.1);
 
     // Add value text
     valueLabels.append('text')
         .text(d => valueFormat(d.value))
-        .attr('dy', '0.1em') // Slight vertical adjustment for centering
-        .style('font-family', 'system-ui')
-        .style('font-size', '14px')
-        .style('font-weight', '600')
+        .attr('dy', '0.1em') 
+        .style('font-family', 'circularstd,sans-serif')
+        .style('font-size', '16px')
+        .style('font-weight', '400')
         .style('fill', chartColor)
         .style('text-anchor', 'middle')
         .style('alignment-baseline', 'middle')
@@ -157,28 +182,22 @@ export function createRadarChart(element, data, options = {}) {
         .append('text')
         .attr('class', 'categoryLabel')
         .attr('transform', (d, i) => {
-            const angle = angleSlice * i - Math.PI/2;
-            const x = rScale(maxValue * 1.2) * Math.cos(angle); // Same radius as value labels
-            const y = rScale(maxValue * 1.2) * Math.sin(angle);
-            return `translate(${x},${y})`;
+            const pos = getPosition(i);
+            return `translate(${pos.x},${pos.y})`;
         })
-        .style('font-family', 'system-ui')
+        .style('font-family', 'circularstd,sans-serif')
         .style('font-size', '17px')
-        .style('font-weight', '600')
+        .style('font-weight', '400')
         .style('fill', '#1a202c')
         .attr('text-anchor', (d, i) => {
             const angle = angleSlice * i;
-            // Top and bottom centered, left side left-aligned, right side right-aligned
             if (angle < Math.PI/6 || Math.abs(angle - Math.PI) < Math.PI/6) return 'middle';
             return angle < Math.PI ? 'start' : 'end';
         })
-        .attr('dy', '2em') // Position below the value label
+        .attr('dy', '2em')
         .attr('dx', (d, i) => {
             const angle = angleSlice * i;
-            // No offset for top/bottom
             if (angle < Math.PI/6 || Math.abs(angle - Math.PI) < Math.PI/6) return '0';
-            // Left side: align with left edge of box (-18px)
-            // Right side: align with right edge of box (+18px)
             return angle < Math.PI ? '-18px' : '18px';
         })
         .style('alignment-baseline', 'middle')
