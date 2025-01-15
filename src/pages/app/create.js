@@ -9,8 +9,9 @@ import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
 import { initCleave } from "/src/utils/cleave.js";
-import { loadD3, createGaugeChart } from "/src/utils/importedD3.js";
+import { loadD3 } from "/src/utils/importedD3.js";
 import { initRadarCharts } from "/src/utils/initRadarCharts.js";
+import { createGaugeChart } from "/src/utils/copilot-gauge.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -33,7 +34,7 @@ function createQuillEditor(selector, placeholderText) {
 
 const quillCustomPrompt = createQuillEditor(
   "#quillCustomPrompt",
-  `e.g. Apple sells premium phones and computers. It is known for a high attention to detail, polish, and user experience. The target audience is consumers who value style and simplicity in their tech, including young adults and professionals willing to pay more for top-notch quality.`
+  `e.g. Rewrite the video with a different hook that is more engaging.`
 );
 
 
@@ -49,15 +50,34 @@ const store = reactive({
   isSaving: false,
   isImporting: false,
   gaugeElement: null,
-  updateGauge() {
-    if (this.gaugeElement && this.sync.copilot) {
-      createGaugeChart(
-        this.gaugeElement, 
-        this.sync.copilot.score,
-        this.sync.copilot.avgScore,
-        this.sync.copilot.topScore
-      );
+  async updateGauge() {
+    console.log('updateGauge called, element:', store.gaugeElement);
+    const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
+    console.log('Found gauge element:', gaugeElement);
+    if (!gaugeElement) {
+      console.log('No gauge element found with [cc_data="copilot-gauge"] selector');
+      return;
     }
+    
+    const score = store.sync?.copilot?.score;
+    console.log('Current score:', score);
+    if (score === undefined || score === null) {
+      console.log('No score available');
+      return;
+    }
+    
+    console.log('Creating gauge with:', {
+      score: Number(score),
+      avgScore: store.sync?.copilot?.avgScore || 75,
+      topScore: store.sync?.copilot?.topScore || 79
+    });
+    
+    await createGaugeChart(
+      gaugeElement,
+      Number(score),
+      store.sync?.copilot?.avgScore || 75,
+      store.sync?.copilot?.topScore || 79
+    );
   },
   dataToSync: new Proxy({}, {
     set(target, property, value) {
@@ -69,19 +89,6 @@ const store = reactive({
       return true;
     }
   }),
-  updateGauge() {
-    if (!this.gaugeElement) return;
-    
-    const score = this.sync?.copilot?.score;
-    if (score === undefined || score === null) return;
-    
-    createGaugeChart(
-      this.gaugeElement,
-      Number(score),
-      this.sync?.copilot?.avgScore || 75,
-      this.sync?.copilot?.topScore || 79
-    );
-  },
   api: {
     profiles: [
       {
@@ -155,7 +162,7 @@ const store = reactive({
     script: [],
     //copilot
     copilot: {
-      score: 90,
+      score: 10,
       virality: 0,
       virality_radar: [
         { category: 'Laughter', value: 4.2 },
@@ -178,7 +185,6 @@ const store = reactive({
     }
   },
 });
-
 
 
 
@@ -572,31 +578,41 @@ const app = createApp({
         console.error('Cleave initialization failed:', error);
     });
 
-    // Initialize D3 and charts
-    loadD3().then(() => {
+    console.log('Starting D3 initialization...');
+    loadD3().then(async () => {
+        console.log('D3 loaded successfully');
         // Initialize gauge chart
         const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
+        console.log('Found gauge element:', gaugeElement);
+        
         if (gaugeElement) {
             store.gaugeElement = gaugeElement;
-            store.updateGauge();
+            console.log('Attempting to update gauge...');
+            await store.updateGauge();
             
             // Set up proxy for copilot object
             if (store.sync && !store.sync.copilot) {
+                console.log('Initializing copilot object');
                 store.sync.copilot = {};
             }
             
             store.sync.copilot = new Proxy(store.sync.copilot || {}, {
                 set(target, property, value) {
+                    console.log(`Setting copilot.${property}:`, value);
                     target[property] = value;
                     if (property === 'score') {
-                        setTimeout(() => store.updateGauge(), 0);
+                        console.log('Score changed, updating gauge');
+                        store.updateGauge();
                     }
                     return true;
                 }
             });
+        } else {
+            console.warn('Gauge element not found');
         }
 
         // Initialize radar charts
+        console.log('Initializing radar charts...');
         initRadarCharts(
             store.sync.copilot.virality_radar,
             store.sync.copilot.direct_response_radar

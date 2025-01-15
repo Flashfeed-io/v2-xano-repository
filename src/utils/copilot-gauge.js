@@ -1,3 +1,5 @@
+import { loadD3 } from './importedD3.js';
+
 // Helper function to lighten a color
 function lightenColor(color, amount) {
     const hex = color.replace('#', '');
@@ -64,7 +66,7 @@ export function createGaugeChart(element, value, avgScore, topScore) {
     // Create SVG
     const svg = d3.select(element)
         .append('svg')
-        .attr('viewBox', `0 0 ${config.size} ${config.size}`)
+        .attr('viewBox', `0 0 ${config.size} 200`)
         .style('width', '100%')
         .style('height', '100%')
         .style('max-width', '300px')
