@@ -10,6 +10,7 @@ import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
 import { initCleave } from "/src/utils/cleave.js";
 import { loadD3, createGaugeChart } from "/src/utils/importedD3.js";
+import { initRadarCharts } from "/src/utils/initRadarCharts.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -48,6 +49,16 @@ const store = reactive({
   isSaving: false,
   isImporting: false,
   gaugeElement: null,
+  updateGauge() {
+    if (this.gaugeElement && this.sync.copilot) {
+      createGaugeChart(
+        this.gaugeElement, 
+        this.sync.copilot.score,
+        this.sync.copilot.avgScore,
+        this.sync.copilot.topScore
+      );
+    }
+  },
   dataToSync: new Proxy({}, {
     set(target, property, value) {
       target[property] = value;
@@ -146,8 +157,23 @@ const store = reactive({
     copilot: {
       score: 90,
       virality: 0,
-      virality_radar: [],
+      virality_radar: [
+        { category: 'Laughter', value: 4.2 },
+        { category: 'Shock', value: 3.6 },
+        { category: 'Amazement', value: 3.4 },
+        { category: 'Sentimental', value: 2.3 },
+        { category: 'Agitation', value: 1.5 },
+        { category: 'Intrigue', value: 2.8 }
+      ],
       direct_response: 0,
+      direct_response_radar: [
+        { category: 'Urgency', value: 3.9 },
+        { category: 'Trust', value: 4.6 },
+        { category: 'Clarity', value: 4.2 },
+        { category: 'Desire', value: 4.4 },
+        { category: 'Value', value: 3.8 },
+        { category: 'Relevance', value: 4.1 }
+      ],
       suggestions: []
     }
   },
@@ -546,29 +572,37 @@ const app = createApp({
         console.error('Cleave initialization failed:', error);
     });
 
-    // Initialize D3 Gauge Chart
+    // Initialize D3 and charts
     loadD3().then(() => {
-      const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
-      if (gaugeElement) {
-        store.gaugeElement = gaugeElement;
-        store.updateGauge();
-        
-        // Set up proxy for copilot object
-        if (store.sync && !store.sync.copilot) {
-          store.sync.copilot = {};
-        }
-        store.sync.copilot = new Proxy(store.sync.copilot || {}, {
-          set(target, property, value) {
-            target[property] = value;
-            if (property === 'score') {
-              setTimeout(() => store.updateGauge(), 0);
+        // Initialize gauge chart
+        const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
+        if (gaugeElement) {
+            store.gaugeElement = gaugeElement;
+            store.updateGauge();
+            
+            // Set up proxy for copilot object
+            if (store.sync && !store.sync.copilot) {
+                store.sync.copilot = {};
             }
-            return true;
-          }
-        });
-      }
+            
+            store.sync.copilot = new Proxy(store.sync.copilot || {}, {
+                set(target, property, value) {
+                    target[property] = value;
+                    if (property === 'score') {
+                        setTimeout(() => store.updateGauge(), 0);
+                    }
+                    return true;
+                }
+            });
+        }
+
+        // Initialize radar charts
+        initRadarCharts(
+            store.sync.copilot.virality_radar,
+            store.sync.copilot.direct_response_radar
+        );
     }).catch(error => {
-      console.error('Failed to initialize gauge chart:', error);
+        console.error('Failed to initialize D3 charts:', error);
     });
 
     // Initialize masonry
