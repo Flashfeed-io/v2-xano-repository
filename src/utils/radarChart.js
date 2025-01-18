@@ -14,7 +14,10 @@ export function createRadarChart(element, data, options = {}) {
         levels = 5,
         valueFormat = d => d.toFixed(1),
         color = '#015283',
-        backgroundColor = 'rgba(82, 220, 255, 0.1)',
+        backgroundColor = '#52dcff1a',
+        boxShadow = '#45bee44a',
+        radarLineColor = color,
+        radarFillColor = backgroundColor,
         // Array of [top, right, bottom, left] offsets for each point
         offsets = [
             [24, 0, 0, 0],    // Top (Laughter)
@@ -87,46 +90,76 @@ export function createRadarChart(element, data, options = {}) {
         .style('stroke-width', '1px')
         .style('stroke-dasharray', '4,4');
 
-    // Draw the radar chart path
-    const radarLine = d3.lineRadial()
-        .radius(d => rScale(d.value))
-        .angle((d, i) => i * angleSlice)
-        .curve(d3.curveCardinalClosed.tension(0.2));
+    // Add value boxes
+    const valueBoxes = svg.selectAll('.value-box')
+        .data(data)
+        .enter()
+        .append('g')
+        .attr('class', 'value-box');
 
-    // Add radar area with gradient
-    const gradientId = 'radarGradient-' + Math.random().toString(36).substr(2, 9);
-    const gradient = svg.append('defs')
-        .append('linearGradient')
-        .attr('id', gradientId)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', '100%')
-        .attr('y2', '100%');
+    valueBoxes.each(function(d, i) {
+        const g = d3.select(this);
+        const pos = getPosition(i);
+        const boxWidth = 40;
+        const boxHeight = 34;
 
-    gradient.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', chartColor)
-        .attr('stop-opacity', 0.2);
+        // Find the highest value
+        const maxValue = Math.max(...data.map(d => d.value));
+        const isHighestValue = d.value === maxValue;
 
-    gradient.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', chartColor)
-        .attr('stop-opacity', 0.1);
+        // Add the box
+        g.append('rect')
+            .attr('x', pos.x - boxWidth/2)
+            .attr('y', pos.y - boxHeight/2)
+            .attr('width', boxWidth)
+            .attr('height', boxHeight)
+            .attr('rx', 8)
+            .attr('ry', 8)
+            .style('fill', isHighestValue ? color : backgroundColor)
+            .style('stroke', isHighestValue ? color : boxShadow)
+            .style('stroke-width', '1px');
 
-    // Add radar area
+        // Add the text
+        g.append('text')
+            .attr('x', pos.x)
+            .attr('y', pos.y)
+            .attr('dy', '0.35em')
+            .attr('text-anchor', 'middle')
+            .style('fill', isHighestValue ? backgroundColor : color)
+            .style('font-size', '17px')
+            .text(d => valueFormat(d.value));
+
+        // Add the label
+        g.append('text')
+            .attr('x', pos.x)
+            .attr('y', pos.y + 24)
+            .attr('text-anchor', 'middle')
+            .style('fill', color)
+            .style('font-size', '12px')
+            .text(d => d.axis);
+    });
+
+    // Draw the radar chart area first (for the fill)
     svg.append('path')
         .datum(data)
-        .attr('class', 'radarArea')
-        .attr('d', radarLine)
-        .style('fill', `url(#${gradientId})`);
+        .attr('class', 'radar-area')
+        .attr('d', d3.lineRadial()
+            .radius(d => rScale(d.value))
+            .angle((d, i) => i * angleSlice)
+            .curve(d3.curveCardinalClosed.tension(0.2)))
+        .style('fill', radarFillColor)
+        .style('fill-opacity', 0.3);
 
-    // Add radar stroke
+    // Draw the radar chart path (line)
     svg.append('path')
         .datum(data)
-        .attr('class', 'radarStroke')
-        .attr('d', radarLine)
+        .attr('class', 'radar-path')
+        .attr('d', d3.lineRadial()
+            .radius(d => rScale(d.value))
+            .angle((d, i) => i * angleSlice)
+            .curve(d3.curveCardinalClosed.tension(0.2)))
         .style('fill', 'none')
-        .style('stroke', chartColor)
+        .style('stroke', radarLineColor)
         .style('stroke-width', '2px');
 
     // Add dots at data points
@@ -139,41 +172,8 @@ export function createRadarChart(element, data, options = {}) {
         .attr('cx', (d, i) => rScale(d.value) * Math.cos(angleSlice * i - Math.PI/2))
         .attr('cy', (d, i) => rScale(d.value) * Math.sin(angleSlice * i - Math.PI/2))
         .style('fill', '#fff')
-        .style('stroke', chartColor)
+        .style('stroke', color)
         .style('stroke-width', '2px');
-
-    // Add value labels with background
-    const valueLabels = svg.selectAll('.valueLabel')
-        .data(data)
-        .enter()
-        .append('g')
-        .attr('class', 'valueLabel')
-        .attr('transform', (d, i) => {
-            const pos = getPosition(i);
-            return `translate(${pos.x},${pos.y})`;
-        });
-
-    // Add value background
-    valueLabels.append('rect')
-        .attr('x', -20)  // 1px wider on left
-        .attr('y', -17)
-        .attr('width', 40)  // 2px wider total
-        .attr('height', 34)
-        .attr('rx', 6) 
-        .style('fill', chartColor)
-        .style('fill-opacity', 0.1);
-
-    // Add value text
-    valueLabels.append('text')
-        .text(d => valueFormat(d.value))
-        .attr('dy', '0.1em') 
-        .style('font-family', 'circularstd,sans-serif')
-        .style('font-size', '16px')
-        .style('font-weight', '400')
-        .style('fill', chartColor)
-        .style('text-anchor', 'middle')
-        .style('alignment-baseline', 'middle')
-        .style('line-height', '1');
 
     // Add category labels
     const categoryLabels = svg.selectAll('.categoryLabel')
@@ -183,11 +183,11 @@ export function createRadarChart(element, data, options = {}) {
         .attr('class', 'categoryLabel')
         .attr('transform', (d, i) => {
             const pos = getPosition(i);
-            return `translate(${pos.x},${pos.y})`;
+            return `translate(${pos.x},${pos.y + 3})`;
         })
         .style('font-family', 'circularstd,sans-serif')
         .style('font-size', '17px')
-        .style('font-weight', '400')
+        .style('font-weight', '500')
         .style('fill', '#1a202c')
         .attr('text-anchor', (d, i) => {
             const angle = angleSlice * i;

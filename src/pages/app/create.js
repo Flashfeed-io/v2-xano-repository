@@ -49,6 +49,7 @@ const store = reactive({
   })(),
   isSaving: false,
   isImporting: false,
+  toggle_radar: "Direct Response",
   gaugeElement: null,
   async updateGauge() {
     console.log('updateGauge called, element:', store.gaugeElement);
@@ -120,6 +121,7 @@ const store = reactive({
     description: "",
     //helpers
     helpers: {
+      toggle_tabs: 'Script',
       toggle_show_profile: false,
       toggle_generate_script: true,
       toggle_generate_action_description: true,
@@ -133,7 +135,7 @@ const store = reactive({
     },
     //profiles
     selectedProfile: {
-      toogle_summary: true,
+      toggle_summary: true,
       toggle_key_highlights: true,
       id: "",
       image: "",
@@ -333,7 +335,7 @@ const addScriptSection = () => {
     startTime: calculateStartTime(), // Auto-calculated from previous section
     duration: 3.0,               // Default duration in seconds
     script: "",                   // Script/dialogue content
-    visualDescription: "",        // Visual description and actions
+    action_description: "",        // Visual description and actions
     textOnScreen: "",            // Any text overlays or captions
     viralityRatings: [],         // Array to store virality ratings
     directResponseRatings: []    // Array to store direct response ratings

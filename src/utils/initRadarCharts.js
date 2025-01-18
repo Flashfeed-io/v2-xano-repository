@@ -12,13 +12,21 @@ export function initRadarCharts(viralityData, directResponseData) {
     
     if (viralityElement) {
         createRadarChart(viralityElement, viralityData, {
-            color: '#3182ce' // Blue
+            color: '#0C6BA7',            // Dark blue text
+            backgroundColor: '#E8F7FF',   // Light blue background
+            boxShadow: '#C5ECFF',      // Blue box shadow
+            radarLineColor: '#9ADDFF',   // Light blue line
+            radarFillColor: '#E8F7FF'    // Light blue fill
         });
     }
 
     if (directResponseElement) {
         createRadarChart(directResponseElement, directResponseData, {
-            color: '#9F7AEA' // Purple
+            color: '#5f3699',            // Dark purple text
+            backgroundColor: '#F4F0FF',   // Light purple background
+            boxShadow: '#4e06b021',      // Purple box shadow
+            radarLineColor: '#DABFFF',   // Light purple line
+            radarFillColor: '#F4F0FF'    // Light purple fill
         });
     }
 }

@@ -7,9 +7,10 @@ function lightenColor(color, amount) {
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
 
-    const lighterR = Math.min(Math.round(r + (255 - r) * amount), 255);
-    const lighterG = Math.min(Math.round(g + (255 - g) * amount), 255);
-    const lighterB = Math.min(Math.round(b + (255 - b) * amount), 255);
+    // Reduce the amount of lightening by using a smaller multiplier
+    const lighterR = Math.min(Math.round(r + (255 - r) * (amount * 0.9)), 255);
+    const lighterG = Math.min(Math.round(g + (255 - g) * (amount * 0.9)), 255);
+    const lighterB = Math.min(Math.round(b + (255 - b) * (amount * 0.9)), 255);
 
     return '#' + 
         (lighterR.toString(16).padStart(2, '0')) +
@@ -76,11 +77,13 @@ export function createGaugeChart(element, value, avgScore, topScore) {
     const tooltip = d3.select('body').selectAll('.gauge-tooltip').data([0])
         .join('div')
         .attr('class', 'gauge-tooltip')
-        .style('position', 'absolute')
+        .style('position', 'fixed')
         .style('visibility', 'hidden')
         .style('background-color', 'rgba(0, 0, 0, 0.8)')
         .style('color', 'white')
         .style('padding', '8px 12px')
+        .style('margin', '0')
+        .style('height', 'auto')
         .style('border-radius', '4px')
         .style('font-size', '14px')
         .style('pointer-events', 'none')
