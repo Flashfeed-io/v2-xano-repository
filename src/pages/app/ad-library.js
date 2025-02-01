@@ -186,8 +186,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const msnry = new Masonry(hitsList, {
       itemSelector: ".webflow-hit-item",
-      percentPosition: false,
+      percentPosition: true,
+      columnWidth: ".webflow-hit-item",
       horizontalOrder: true,
+      initLayout: true,
+      transitionDuration: 0, // Disable animations completely
+      resize: false // Prevent auto-layout on resize
     });
 
     //if saved

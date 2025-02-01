@@ -50,6 +50,7 @@ const store = reactive({
   isSaving: false,
   isImporting: false,
   toggle_radar: "Direct Response",
+  toggle_tabs: 'Script',
   gaugeElement: null,
   async updateGauge() {
     console.log('updateGauge called, element:', store.gaugeElement);
@@ -121,7 +122,6 @@ const store = reactive({
     description: "",
     //helpers
     helpers: {
-      toggle_tabs: 'Script',
       toggle_show_profile: false,
       toggle_generate_script: true,
       toggle_generate_action_description: true,
@@ -490,10 +490,10 @@ const debugStore = StoreDebugger.init(store);
 await toast.init();
 
 /*--masonry----------------------------------------------------------*/
-function initMasonry() {
+// Make initMasonry globally accessible
+window.initMasonry = function() {
   console.log('[DEBUG] Render event - Start');
   const hitsList = document.querySelector(".webflow-hits-list");
-  // $(hitsList).css('width', '800px');
   if (!hitsList) {
     console.error('[DEBUG] Hits list container not found');
     return;
@@ -515,13 +515,15 @@ function initMasonry() {
       percentPosition: true,
       columnWidth: ".webflow-hit-item",
       horizontalOrder: true,
-      initLayout: true
+      initLayout: true,
+      transitionDuration: 0, // Disable animations completely
+      resize: false // Prevent auto-layout on resize
     });
     
-    // Force layout update
-    setTimeout(() => {
+    // Handle resize manually without animations
+    window.addEventListener('resize', () => {
       masonry.layout();
-    }, 100);
+    });
     
     return masonry;
   });
@@ -627,7 +629,7 @@ const app = createApp({
     injectStyles();
     setTimeout(() => {
       console.log('[DEBUG] masonry set timeout start');
-      initMasonry();
+      window.initMasonry();
     }, 1000);
     
 
