@@ -6,6 +6,19 @@ import { getUserData, logout, verifyAuth } from "@/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
 import { initCustomDropdown } from "@/utils/customDropdown.js";
 
+// Debounce utility
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 // A reactive store for user data
 const store = reactive({
   user: {},
@@ -15,7 +28,116 @@ const store = reactive({
       .find(c => c.trim().startsWith('ff_auth='));
     return authCookie ? authCookie.split('=')[1] : '';
   })(),
-  activeFilterTab: "platform"
+  activeFilterTab: "platform",
+  boards: [
+    {
+      id: "board_1",
+      name: "Best Performing Ads",
+      user_id: "user_123",
+      created_at: "2024-02-17T08:20:21",
+      updated_at: "2024-02-17T08:20:21",
+      ads: []
+    },
+    {
+      id: "board_2",
+      name: "",  // Will show as "Untitled Board"
+      user_id: "user_123",
+      created_at: "2024-02-17T08:15:00",
+      updated_at: "2024-02-17T08:15:00",
+      ads: []
+    },
+    {
+      id: "board_3",
+      name: "Competitor Research",
+      user_id: "user_123",
+      created_at: "2024-02-16T23:45:00",
+      updated_at: "2024-02-17T07:30:00",
+      ads: []
+    },
+    {
+      id: "board_4",
+      name: "Q1 Campaign Ideas",
+      user_id: "user_123",
+      created_at: "2024-02-16T20:10:00",
+      updated_at: "2024-02-17T06:45:00",
+      ads: []
+    },
+    {
+      id: "board_5",
+      name: "Design Inspiration",
+      user_id: "user_123",
+      created_at: "2024-02-16T18:30:00",
+      updated_at: "2024-02-16T18:30:00",
+      ads: []
+    }
+  ],
+  editingBoardId: null,
+
+  // Methods for board management
+  startEditing(itemId) {
+    console.log('Starting edit mode for:', itemId);
+    this.editingBoardId = itemId;
+    // Use setTimeout to ensure the input is in the DOM before focusing
+    setTimeout(() => {
+      // Find input within the correct div-block
+      const input = document.querySelector('.form-field-inline-board');
+      if (input) {
+        console.log('Found input to focus');
+        input.focus();
+      } else {
+        console.log('Could not find input');
+      }
+    }, 100);
+  },
+
+  stopEditing() {
+    console.log('Stopping edit mode, current editingBoardId:', this.editingBoardId);
+    this.editingBoardId = null; // This will show all text elements and hide all inputs
+  },
+
+  updateBoardName(itemId, newName) {
+    console.log('Updating board name for:', itemId);
+    this.debouncedUpdateBoard(itemId, newName);
+    // Only stop editing if we're editing this specific board
+    if (this.editingBoardId === itemId) {
+      console.log('Stopping edit mode after update');
+      this.stopEditing();
+    }
+  },
+
+  // Debounced update function
+  debouncedUpdateBoard: debounce((itemId, newName) => {
+    console.log('Debounced update for board:', itemId, 'new name:', newName);
+    const board = store.boards.find(b => b.id === itemId);
+    if (board) {
+      board.name = newName || ""; // Allow empty string, placeholder handles display
+      board.updated_at = new Date().toISOString();
+      // Simulate API call
+      alert(`Would save board: ${itemId} with new name: ${newName || 'Untitled Board'}`);
+    }
+  }, 500), // 500ms delay
+
+  handleKeyup(event, itemId, itemName) {
+    if (event.key === 'Enter') {
+      event.target.blur(); // Remove focus from input
+      this.updateBoardName(itemId, itemName);
+    }
+  },
+
+  // Optional: Add method to create new board
+  createNewBoard() {
+    console.log('Creating new board...');
+    const newBoard = {
+      id: 'board_' + (this.boards.length + 1), // Simple ID generation
+      name: "",
+      user_id: this.user.id || 'user_123',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ads: []
+    };
+    this.boards.unshift(newBoard); // Add to the beginning of the array
+    // TODO: Save to backend
+  }
 });
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
