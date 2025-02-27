@@ -28,13 +28,15 @@ export const initCustomDropdown = () => {
       const isInput = e.target.tagName.toLowerCase() === 'input';
       const isEditableText = e.target.classList.contains('form-field-inline-board') || 
                            e.target.classList.contains('cc_board-name') ||
-                           e.target.closest('.vue-for-swipefeed-boards') !== null ||
+                           e.target.closest('.cc_vue-for-swipefeed-boards') !== null ||
+                           e.target.closest('.vue_cc-for') !== null ||
                            e.target.closest('.cc_option-dropdown__list-custom') !== null;
       
       console.log('[DEBUG] Click target:', e.target);
       console.log('[DEBUG] Click target classes:', e.target.className);
       console.log('[DEBUG] Click target parent:', e.target.parentElement);
-      console.log('[DEBUG] Closest vue-for-swipefeed-boards:', e.target.closest('.vue-for-swipefeed-boards'));
+      console.log('[DEBUG] Closest cc_vue-for-swipefeed-boards:', e.target.closest('.cc_vue-for-swipefeed-boards'));
+      console.log('[DEBUG] Closest vue_cc-for:', e.target.closest('.vue_cc-for'));
       console.log('[DEBUG] Is input:', isInput);
       console.log('[DEBUG] Is editable text:', isEditableText);
       
@@ -161,24 +163,26 @@ export const initCustomDropdown = () => {
       });
 
       // Handle clicks inside the dropdown list
-      dropdownList.addEventListener('click', (e) => {
-        // Stop propagation for all clicks inside the dropdown list
-        e.stopPropagation();
-        
-        // Only close if clicking a dropdown item
-        const dropdownItem = e.target.closest('.cc_dropdown__list-item');
-        const isEditArea = e.target.closest('.vue-for-swipefeed-boards') !== null;
-        
-        console.log('[DEBUG] List item clicked:', e.target);
-        console.log('[DEBUG] List item classes:', e.target.className);
-        console.log('[DEBUG] List item parent:', e.target.parentElement);
-        
-        console.log('[DEBUG] Is edit area:', isEditArea);
-        
-        if (dropdownItem && !isEditArea) {
-          // Close dropdown after item click, unless it's in the edit area
-          setTimeout(() => toggleDropdown(false), 100);
-        }
+      dropdownList.querySelectorAll('.cc_dropdown__list-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          console.log('[DEBUG] List item clicked:', e.target);
+          console.log('[DEBUG] List item classes:', e.target.className);
+          console.log('[DEBUG] List item parent:', e.target.parentElement);
+          
+          // Only close if clicking a dropdown item
+          const dropdownItem = e.target.closest('.cc_dropdown__list-item');
+          const isEditArea = e.target.closest('.cc_vue-for-swipefeed-boards') !== null || 
+                           e.target.closest('.vue_cc-for') !== null;
+          
+          console.log('[DEBUG] Is edit area:', isEditArea);
+          
+          if (dropdownItem && !isEditArea) {
+            // Close dropdown after item click, unless it's in the edit area
+            setTimeout(() => toggleDropdown(false), 100);
+          }
+          
+          e.stopPropagation();
+        });
       });
 
       // Handle text/input elements
