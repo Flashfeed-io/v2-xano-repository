@@ -5,6 +5,7 @@ import { toast } from "@/utils/toastManager.js";
 import { getUserData, logout, verifyAuth } from "@/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
 import { initCustomDropdown } from "@/utils/customDropdown.js";
+import { getHeaders } from "@/utils/constants.js";
 
 // Debounce utility
 function debounce(func, wait) {
@@ -75,17 +76,29 @@ const store = reactive({
 
   // Methods for board management
   startEditing(itemId) {
-    console.log('Starting edit mode for:', itemId);
+    console.log('[DEBUG] Starting edit mode for:', itemId);
     this.editingBoardId = itemId;
     // Use setTimeout to ensure the input is in the DOM before focusing
     setTimeout(() => {
       // Find input within the correct div-block
-      const input = document.querySelector('.form-field-inline-board');
+      console.log('[DEBUG] Looking for input element');
+      const input = document.querySelector('.form_field.is--board.w-input');
+      console.log('[DEBUG] Found input element:', input);
+      console.log('[DEBUG] Input element attributes:', input ? {
+        classes: input.className,
+        id: input.id,
+        type: input.type,
+        value: input.value,
+        isVisible: input.offsetParent !== null,
+        parent: input.parentElement
+      } : 'No input found');
+      
       if (input) {
-        console.log('Found input to focus');
+        console.log('[DEBUG] Attempting to focus input');
         input.focus();
+        console.log('[DEBUG] Is input focused:', document.activeElement === input);
       } else {
-        console.log('Could not find input');
+        console.log('[DEBUG] Could not find input element');
       }
     }, 100);
   },
@@ -106,16 +119,31 @@ const store = reactive({
   },
 
   // Debounced update function
-  debouncedUpdateBoard: debounce((itemId, newName) => {
+  debouncedUpdateBoard: debounce(async (itemId, newName) => {
     console.log('Debounced update for board:', itemId, 'new name:', newName);
     const board = store.boards.find(b => b.id === itemId);
     if (board) {
-      board.name = newName || ""; // Allow empty string, placeholder handles display
-      board.updated_at = new Date().toISOString();
-      // Simulate API call
-      alert(`Would save board: ${itemId} with new name: ${newName || 'Untitled Board'}`);
+      try {
+        const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/edit_name', {
+          method: 'PUT',
+          headers: getHeaders(store.token),
+          body: JSON.stringify({
+            board_id: parseInt(itemId),
+            new_name: newName || ''
+          })
+        });
+
+        if (!response.ok) throw new Error('Failed to update board name');
+        
+        // Update local state after successful API call
+        board.name = newName || "";
+        board.updated_at = new Date().toISOString();
+      } catch (error) {
+        console.error('Error updating board name:', error);
+        toast.error('Failed to update board name');
+      }
     }
-  }, 500), // 500ms delay
+  }, 500),
 
   handleKeyup(event, itemId, itemName) {
     if (event.key === 'Enter') {
@@ -124,19 +152,54 @@ const store = reactive({
     }
   },
 
-  // Optional: Add method to create new board
-  createNewBoard() {
+  // Method to create new board
+  async createNewBoard() {
     console.log('Creating new board...');
-    const newBoard = {
-      id: 'board_' + (this.boards.length + 1), // Simple ID generation
-      name: "",
-      user_id: this.user.id || 'user_123',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      ads: []
-    };
-    this.boards.unshift(newBoard); // Add to the beginning of the array
-    // TODO: Save to backend
+    try {
+      const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/new', {
+        method: 'POST',
+        headers: getHeaders(store.token),
+        body: JSON.stringify({})
+      });
+
+      if (!response.ok) throw new Error('Failed to create board');
+      
+      const newBoard = await response.json();
+      this.boards.unshift(newBoard);
+      toast.success('New board created');
+    } catch (error) {
+      console.error('Error creating board:', error);
+      toast.error('Failed to create new board');
+    }
+  },
+
+  // Add method to save ad to board
+  async saveAdToBoard(adId, boardId) {
+    try {
+      const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/save_ad', {
+        method: 'POST',
+        headers: getHeaders(store.token),
+        body: JSON.stringify({
+          ad_id: parseInt(adId),
+          board_id: parseInt(boardId)
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to save ad to board');
+      
+      // Update UI to show ad is saved
+      $(`.board-checkbox[data-board-id="${boardId}"][data-ad-id="${adId}"]`).addClass('is--cc_added');
+      
+      // If this is the default board, also update the main save button
+      if (boardId === this.defaultBoardId) {
+        $(`.button-dark[data-ad-id="${adId}"][cc_data="alg_save"]`).addClass('is--saved');
+      }
+
+      toast.success('Ad saved to board');
+    } catch (error) {
+      console.error('Error saving ad to board:', error);
+      toast.error('Failed to save ad to board');
+    }
   }
 });
 
@@ -411,10 +474,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
     /*--custom dropdown--*/
     try {
-      console.log('[DEBUG] Initializing custom dropdown');
-      initCustomDropdown();
+      console.log('[DEBUG] Skipping early dropdown initialization - will initialize in mounted hook');
     } catch (error) {
-      console.error('[DEBUG] Error initializing custom dropdown:', error);
+      console.error('[DEBUG] Error:', error);
     }
   });
 });
@@ -431,6 +493,7 @@ if (store.token) {
 }
 
 if (store.token) {
+  alert('Token found. getting user data.');
   await getUserData(store);
 }
 
