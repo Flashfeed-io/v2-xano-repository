@@ -1,4 +1,5 @@
 import { toast } from "/src/utils/toastManager.js";
+import { getHeaders } from '/src/utils/constants.js';
 
 const statusEnum = Object.freeze({
   idle: 0,
@@ -88,7 +89,8 @@ export function WebflowFormComponent(props = {}) {
         console.log("Submitting to:", this.actionUrl, "with fields:", props.fields);
         
         const headers = {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getHeaders()
         };
         if (props.requiresAuth !== false) {
           const token = document.cookie.split(';').find(c => c.trim().startsWith('ff_auth=')).split('=')[1];

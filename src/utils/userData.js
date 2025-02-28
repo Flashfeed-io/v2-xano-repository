@@ -1,4 +1,4 @@
-import { getHeaders, getCurrentXanoUrl } from './constants.js';
+import { getHeaders } from './constants.js';
 
 // Reusable token check function
 export const checkAndGetToken = (store, redirectOnFailure = true) => {
@@ -15,13 +15,13 @@ export const checkAndGetToken = (store, redirectOnFailure = true) => {
 };
 
 export const getUserData = async (store) => {
-  const isAuthenticated = await verifyAuth(store);
-  
-  if (!isAuthenticated) {
+  const userData = await verifyAuth(store);
+  if (!userData) {
     alert('Authentication required. Redirecting to login page...');
     window.location.href = "/login";
     return;
   }
+  return userData;
 };
 
 export const verifyAuth = async (store) => {
@@ -29,7 +29,7 @@ export const verifyAuth = async (store) => {
   if (!token) return false;
 
   try {
-    const url = `${getCurrentXanoUrl()}/auth/me`;
+    const url = 'https://x6c9-ohwk-nih4.n7d.xano.io/api:Y296zGem/auth/me';
     const headers = getHeaders(token);
     
     console.log("[DEBUG] verifyAuth request:", {
@@ -71,7 +71,10 @@ export const verifyAuth = async (store) => {
 
     const data = await response.json();
     console.log("[DEBUG] verifyAuth success:", data);
-    return true;
+    
+    // Store the user data in the store
+    store.user = data;
+    return data;
   } catch (error) {
     console.error("[DEBUG] Error in verifyAuth:", error);
     alert('Error verifying authentication: ' + error.message);
@@ -88,7 +91,7 @@ export const logout = async (store) => {
   }
 
   try {
-    const response = await fetch(`${getCurrentXanoUrl()}/auth/logout`, {
+    const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:Y296zGem/auth/logout', {
       method: "POST",
       headers: getHeaders(token)
     });

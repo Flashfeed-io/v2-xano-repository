@@ -4,6 +4,7 @@ import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
 import { getUserData } from "/src/utils/userData.js";
 import { syncFormWithStore } from "/src/utils/formUtils.js";
+import { getHeaders } from '/src/utils/constants.js';
 
 // Initialize toast
 await toast.init();
@@ -50,6 +51,7 @@ const app = createApp({
   async getUserData() {
     return getUserData(store);
   },
+  getHeaders,
   debugStore
 });
 

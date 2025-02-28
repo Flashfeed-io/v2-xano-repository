@@ -30,48 +30,8 @@ const store = reactive({
     return authCookie ? authCookie.split('=')[1] : '';
   })(),
   activeFilterTab: "platform",
-  boards: [
-    {
-      id: "board_1",
-      name: "Best Performing Ads",
-      user_id: "user_123",
-      created_at: "2024-02-17T08:20:21",
-      updated_at: "2024-02-17T08:20:21",
-      ads: []
-    },
-    {
-      id: "board_2",
-      name: "",  // Will show as "Untitled Board"
-      user_id: "user_123",
-      created_at: "2024-02-17T08:15:00",
-      updated_at: "2024-02-17T08:15:00",
-      ads: []
-    },
-    {
-      id: "board_3",
-      name: "Competitor Research",
-      user_id: "user_123",
-      created_at: "2024-02-16T23:45:00",
-      updated_at: "2024-02-17T07:30:00",
-      ads: []
-    },
-    {
-      id: "board_4",
-      name: "Q1 Campaign Ideas",
-      user_id: "user_123",
-      created_at: "2024-02-16T20:10:00",
-      updated_at: "2024-02-17T06:45:00",
-      ads: []
-    },
-    {
-      id: "board_5",
-      name: "Design Inspiration",
-      user_id: "user_123",
-      created_at: "2024-02-16T18:30:00",
-      updated_at: "2024-02-16T18:30:00",
-      ads: []
-    }
-  ],
+  boards: [],
+  defaultBoard: null,
   editingBoardId: null,
 
   // Methods for board management
@@ -138,6 +98,7 @@ const store = reactive({
         // Update local state after successful API call
         board.name = newName || "";
         board.updated_at = new Date().toISOString();
+        toast.success('Board name updated successfully');
       } catch (error) {
         console.error('Error updating board name:', error);
         toast.error('Failed to update board name');
@@ -200,7 +161,51 @@ const store = reactive({
       console.error('Error saving ad to board:', error);
       toast.error('Failed to save ad to board');
     }
-  }
+  },
+
+  // Add method to delete board
+  async deleteBoard(boardId) {
+    try {
+      const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/delete/${boardId}`, {
+        method: 'DELETE',
+        headers: getHeaders(store.token)
+      });
+
+      if (!response.ok) throw new Error('Failed to delete board');
+      
+      // Remove the board from local state
+      this.boards = this.boards.filter(board => board.id !== boardId);
+      
+      toast.success('Board deleted successfully');
+    } catch (error) {
+      console.error('Error deleting board:', error);
+      toast.error('Failed to delete board');
+    }
+  },
+
+  // Add method to fetch user's boards
+  async fetchUserBoards() {
+    try {
+      const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/me', {
+        method: 'GET',
+        headers: getHeaders(store.token)
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch boards');
+      
+      const data = await response.json();
+      this.defaultBoard = data.users_default_board;
+      this.boards = data.users_boards || [];
+      
+      console.log('[DEBUG] Fetched boards:', {
+        defaultBoard: this.defaultBoard,
+        boards: this.boards
+      });
+    } catch (error) {
+      console.error('Error fetching boards:', error);
+      toast.error('Failed to load your boards');
+    }
+  },
 });
 
 /*-----------------------------------------------------------------------------------------------------------------------------*/
@@ -224,7 +229,7 @@ window.addEventListener("DOMContentLoaded", () => {
   );
 
   const search = instantsearch({
-    indexName: "movie",
+    indexName: "ads",
     searchClient,
   });
 
@@ -490,10 +495,14 @@ if (store.token) {
   if (!isAuthenticated) {
     window.location.href = "/";
   }
+  
+  // Fetch boards after successful auth
+  toast.success('Fetching your boards...');
+  await store.fetchUserBoards();
 }
 
 if (store.token) {
-  alert('Token found. getting user data.');
+  toast.success('Getting user data...');
   await getUserData(store);
 }
 

@@ -5,7 +5,6 @@ import { toast } from "/src/utils/toastManager.js";
 import { getUserData, logout, verifyAuth, checkAndGetToken } from "/src/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
 import Quill from "quill";
-import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
 import { initCleave } from "/src/utils/cleave.js";
@@ -200,12 +199,15 @@ async function importFromUrl(url) {
     const token = checkAndGetToken(store);
     if (!token) return;
 
-    const requestUrl = `${getCurrentXanoUrl()}/import_url`;
+    const requestUrl = 'https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/import_url';
     const requestBody = { inputUrl: url };
     
     const response = await fetch(requestUrl, {
       method: 'POST',
-      headers: getHeaders(token),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(requestBody)
     });
 
@@ -243,11 +245,14 @@ async function handleProfile(action) {
       const token = checkAndGetToken(store);
       if (!token) return;
 
-      const requestUrl = `${getCurrentXanoUrl()}/profile/new`;
+      const requestUrl = 'https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/profile/new';
       
       const response = await fetch(requestUrl, {
         method: 'POST',
-        headers: getHeaders(token),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({})
       });
 
@@ -499,6 +504,8 @@ window.initMasonry = function() {
     return;
   }
 
+  let masonryInstance = null;
+
   // Wait for all videos to load
   const videos = hitsList.querySelectorAll('video');
   Promise.all(Array.from(videos).map(video => {
@@ -510,7 +517,7 @@ window.initMasonry = function() {
       }
     });
   })).then(() => {
-    const masonry = new Masonry(hitsList, {
+    masonryInstance = new Masonry(hitsList, {
       itemSelector: ".webflow-hit-item",
       percentPosition: true,
       columnWidth: ".webflow-hit-item",
@@ -522,10 +529,35 @@ window.initMasonry = function() {
     
     // Handle resize manually without animations
     window.addEventListener('resize', () => {
-      masonry.layout();
+      if (masonryInstance) masonryInstance.layout();
     });
+
+    // Create a MutationObserver to watch for style changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          // Target the specific modal using the combo class
+          const modalElement = document.querySelector('.modal_initiate.is--import-videos-modal');
+          if (modalElement && window.getComputedStyle(modalElement).display === 'block') {
+            console.log('[DEBUG] Import videos modal visible - Recalculating masonry layout');
+            setTimeout(() => {
+              if (masonryInstance) masonryInstance.layout();
+            }, 50);
+          }
+        }
+      });
+    });
+
+    // Find and observe the modal
+    const modalElement = document.querySelector('.modal_initiate.is--import-videos-modal');
+    if (modalElement) {
+      observer.observe(modalElement, {
+        attributes: true,
+        attributeFilter: ['style']
+      });
+    }
     
-    return masonry;
+    return masonryInstance;
   });
 }
 

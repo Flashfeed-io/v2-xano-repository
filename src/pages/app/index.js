@@ -3,6 +3,7 @@ import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
 import { getUserData, logout, verifyAuth } from "/src/utils/userData.js";
+import { getHeaders, getCurrentXanoUrl } from '/src/utils/constants.js';
 
 /*--main code----------------------------------------------------------*/
 const store = reactive({
@@ -66,6 +67,8 @@ const app = createApp({
   logout() {
     return logout(store);
   },
+  getHeaders,
+  getCurrentXanoUrl,
   debugStore,
   mounted() {
     // Initialize any page-specific functionality here

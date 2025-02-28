@@ -30,7 +30,9 @@ export const initCustomDropdown = () => {
                            e.target.classList.contains('cc_board-name') ||
                            e.target.closest('.cc_vue-for-swipefeed-boards') !== null ||
                            e.target.closest('.vue_cc-for') !== null ||
-                           e.target.closest('.cc_option-dropdown__list-custom') !== null;
+                           e.target.closest('.cc_option-dropdown__list-custom') !== null ||
+                           e.target.classList.contains('heading-14') ||  
+                           e.target.classList.contains('is--cc_board-pointer');  
       
       console.log('[DEBUG] Click target:', e.target);
       console.log('[DEBUG] Click target classes:', e.target.className);
