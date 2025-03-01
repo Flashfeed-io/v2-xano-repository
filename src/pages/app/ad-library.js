@@ -27,7 +27,9 @@ const store = reactive({
     console.log('All cookies:', document.cookie);
     const authCookie = document.cookie.split(';')
       .find(c => c.trim().startsWith('ff_auth='));
-    return authCookie ? authCookie.split('=')[1] : '';
+    const token = authCookie ? decodeURIComponent(authCookie.split('=')[1].trim()) : '';
+    console.log('Auth token:', token);
+    return token;
   })(),
   activeFilterTab: "platform",
   boards: [],
@@ -137,6 +139,7 @@ const store = reactive({
 
   // Add method to save ad to board
   async saveAdToBoard(adId, boardId) {
+    toast.info('Saving ad to board...');
     try {
       const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/save_ad', {
         method: 'POST',
@@ -187,14 +190,20 @@ const store = reactive({
   // Add method to fetch user's boards
   async fetchUserBoards() {
     try {
+      console.log('Fetching boards with token:', this.token);
       const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/me', {
         method: 'GET',
         headers: getHeaders(store.token)
       });
 
+      console.log('Boards response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
       if (!response.ok) throw new Error('Failed to fetch boards');
       
       const data = await response.json();
+      console.log('Boards response data:', data);
+      
       this.defaultBoard = data.users_default_board;
       this.boards = data.users_boards || [];
       
@@ -204,6 +213,11 @@ const store = reactive({
       });
     } catch (error) {
       console.error('Error fetching boards:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       toast.error('Failed to load your boards');
     }
   },
@@ -370,7 +384,7 @@ window.addEventListener("DOMContentLoaded", () => {
 <path d="M69.4323 60.9992C67.9367 61.8545 66.0461 61.5567 64.9153 60.2875L62.0301 57.0495C61.0725 55.9747 59.5471 55.5787 58.1632 56.0456L53.9942 57.4522C52.3601 58.0035 50.5691 57.3456 49.715 55.8802C48.8609 54.4149 49.1812 52.5496 50.4802 51.4235L53.7945 48.5505C54.8947 47.5968 55.3111 46.0904 54.8503 44.7315L53.4618 40.6375C52.9176 39.0329 53.6024 37.2622 55.098 36.4069C56.5936 35.5517 58.4842 35.8495 59.615 37.1186L62.5001 40.3567C63.4579 41.4315 64.9831 41.8275 66.367 41.3606L70.5359 39.9541C72.1704 39.4026 73.9613 40.0605 74.8154 41.5258C75.6696 42.9912 75.3493 44.8565 74.0498 45.9828L70.7357 48.8556C69.6355 49.8093 69.2191 51.3158 69.68 52.6747L71.0685 56.7686C71.6127 58.3732 70.9278 60.144 69.4323 60.9992Z" fill="currentColor"></path>
 </svg></div><div class="pre">Rewrite</div></a></div></nav></div></div></div><div class="alg_ad-library_hit-padding is--video"><video controls="" width="100%" src="${hit.video_url}" class="video"></video></div><div class="alg_ad-library_hit-padding is--bottom"><div class="alg_save-hit-wrap">
 
-<div :class="{ 'is--cc_saved': store.users_swipefeed.some(item => item.ad_id === ${hit.id}) }" cc_data="dropdown-button-wrap" class="cc_save-hit-wrap button-outline">
+<div v-bind:class="{ 'is--cc_saved': store.users_swipefeed.some(item => item.ad_id === ${hit.id}) }" cc_data="dropdown-button-wrap" class="cc_save-hit-wrap button-outline">
 
 
 
@@ -380,13 +394,13 @@ window.addEventListener("DOMContentLoaded", () => {
 <path d="M4.66667 46.6667H32.6667C33.9043 46.6667 35.0913 46.175 35.9665 45.2998C36.8417 44.4247 37.3333 43.2377 37.3333 42V4.66667C37.3333 3.42899 36.8417 2.242 35.9665 1.36683C35.0913 0.491665 33.9043 0 32.6667 0H4.66667C3.42899 0 2.242 0.491665 1.36683 1.36683C0.491665 2.242 0 3.42899 0 4.66667V42C0 43.2377 0.491665 44.4247 1.36683 45.2998C2.242 46.175 3.42899 46.6667 4.66667 46.6667ZM0 79.3333C0 80.571 0.491665 81.758 1.36683 82.6332C2.242 83.5083 3.42899 84 4.66667 84H32.6667C33.9043 84 35.0913 83.5083 35.9665 82.6332C36.8417 81.758 37.3333 80.571 37.3333 79.3333V60.6667C37.3333 59.429 36.8417 58.242 35.9665 57.3668C35.0913 56.4917 33.9043 56 32.6667 56H4.66667C3.42899 56 2.242 56.4917 1.36683 57.3668C0.491665 58.242 0 59.429 0 60.6667V79.3333ZM46.6667 79.3333C46.6667 80.571 47.1583 81.758 48.0335 82.6332C48.9087 83.5083 50.0957 84 51.3333 84H79.3333C80.571 84 81.758 83.5083 82.6332 82.6332C83.5083 81.758 84 80.571 84 79.3333V46.6667C84 45.429 83.5083 44.242 82.6332 43.3668C81.758 42.4917 80.571 42 79.3333 42H51.3333C50.0957 42 48.9087 42.4917 48.0335 43.3668C47.1583 44.242 46.6667 45.429 46.6667 46.6667V79.3333ZM51.3333 32.6667H79.3333C80.571 32.6667 81.758 32.175 82.6332 31.2998C83.5083 30.4247 84 29.2377 84 28V4.66667C84 3.42899 83.5083 2.242 82.6332 1.36683C81.758 0.491665 80.571 0 79.3333 0H51.3333C50.0957 0 48.9087 0.491665 48.0335 1.36683C47.1583 2.242 46.6667 3.42899 46.6667 4.66667V28C46.6667 29.2377 47.1583 30.4247 48.0335 31.2998C48.9087 32.175 50.0957 32.6667 51.3333 32.6667Z" fill="currentColor"></path>
 </svg></div><div class="alg_board-dropdown-arrow w-icon-dropdown-toggle"></div></div><div class="cc_option-dropdown__list-custom is--auto-left"><div class="dropdown_padding"><div class="h-flex-center-2-wrap"><div class="h-flex-center-075 text-align-left"><img src="https://cdn.prod.website-files.com/6643b76ff21fa0983192bff1/664495fa4d7615b45d74d1d3_home-icon.png" loading="lazy" alt="" class="icon_dashboard-nav"><div class="swipefeed-toggle-inputs"><div class="heading-15">SwipeFeed Boards</div><div class="subtext-13">Save your ads to shareable boards.</div></div></div><a v-on:click="store.createNewBoard()" href="#" class="button-dark w-inline-block"><div class="button-icon w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-</svg></div><div>New Board</div></a></div></div><div class="divider"></div><div class="dropdown_padding"><div><div class="cc_vue-for-swipefeed-boards"><div class="cc_dropdown__list-item"><div class="h-flex-center-075 text-align-left"><div id="w-node-_9e4d3d4c-1cd4-80fa-1230-33f4618f07b3-618f0766" class="icon-20 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+</svg></div><div>New Board</div></a></div></div><div class="divider"></div><div class="dropdown_padding"><div><div class="cc_vue-for-swipefeed-boards"><div v-on:click="store.saveAdToBoard(${hit.id}, store.user.default_board_id)" class="cc_dropdown__list-item" v-bind:class="{ 'is--cc_saved': store.users_swipefeed.some(item => item.ad_id === ${hit.id}) }"><div class="h-flex-center-075 text-align-left"><div id="w-node-_9e4d3d4c-1cd4-80fa-1230-33f4618f07b3-618f0766" class="icon-20 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M8 12L12 16M12 16L16 12M12 16V8M7.8 21H16.2C17.8802 21 18.7202 21 19.362 20.673C19.9265 20.3854 20.3854 19.9265 20.673 19.362C21 18.7202 21 17.8802 21 16.2V7.8C21 6.11984 21 5.27976 20.673 4.63803C20.3854 4.07354 19.9265 3.6146 19.362 3.32698C18.7202 3 17.8802 3 16.2 3H7.8C6.11984 3 5.27976 3 4.63803 3.32698C4.07354 3.6146 3.6146 4.07354 3.32698 4.63803C3 5.27976 3 6.11984 3 7.8V16.2C3 17.8802 3 18.7202 3.32698 19.362C3.6146 19.9265 4.07354 20.3854 4.63803 20.673C5.27976 21 6.11984 21 7.8 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-</svg></div><div class="swipefeed-toggle-inputs"><div class="heading-14 is--cc_board-default">My SwipeFeed</div></div></div><div class="auto-left"><div>#</div></div></div></div><div class="divider bot5 top5"></div><div v-for="(item, index) in store.boards" class="cc_vue-for-swipefeed-boards"><div v-on:click="" class="cc_dropdown__list-item"><div class="h-flex-center-075 text-align-left"><div id="w-node-_9e4d3d4c-1cd4-80fa-1230-33f4618f07be-618f0766" class="icon-20 relative-2 w-embed"><svg width="16" height="16" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+</svg></div><div class="swipefeed-toggle-inputs"><div class="heading-14 is--cc_board-default">My SwipeFeed</div></div></div><div class="auto-left"><div>#</div></div></div></div><div class="divider bot5 top5"></div><div v-for="(item, index) in store.boards" class="cc_vue-for-swipefeed-boards"><div v-on:click="toast.success()" class="cc_dropdown__list-item"><div class="h-flex-center-075 text-align-left"><div id="w-node-_9e4d3d4c-1cd4-80fa-1230-33f4618f07be-618f0766" class="icon-20 relative-2 w-embed"><svg width="16" height="16" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M4.66667 46.6667H32.6667C33.9043 46.6667 35.0913 46.175 35.9665 45.2998C36.8417 44.4247 37.3333 43.2377 37.3333 42V4.66667C37.3333 3.42899 36.8417 2.242 35.9665 1.36683C35.0913 0.491665 33.9043 0 32.6667 0H4.66667C3.42899 0 2.242 0.491665 1.36683 1.36683C0.491665 2.242 0 3.42899 0 4.66667V42C0 43.2377 0.491665 44.4247 1.36683 45.2998C2.242 46.175 3.42899 46.6667 4.66667 46.6667ZM0 79.3333C0 80.571 0.491665 81.758 1.36683 82.6332C2.242 83.5083 3.42899 84 4.66667 84H32.6667C33.9043 84 35.0913 83.5083 35.9665 82.6332C36.8417 81.758 37.3333 80.571 37.3333 79.3333V60.6667C37.3333 59.429 36.8417 58.242 35.9665 57.3668C35.0913 56.4917 33.9043 56 32.6667 56H4.66667C3.42899 56 2.242 56.4917 1.36683 57.3668C0.491665 58.242 0 59.429 0 60.6667V79.3333ZM46.6667 79.3333C46.6667 80.571 47.1583 81.758 48.0335 82.6332C48.9087 83.5083 50.0957 84 51.3333 84H79.3333C80.571 84 81.758 83.5083 82.6332 82.6332C83.5083 81.758 84 80.571 84 79.3333V46.6667C84 45.429 83.5083 44.242 82.6332 43.3668C81.758 42.4917 80.571 42 79.3333 42H51.3333C50.0957 42 48.9087 42.4917 48.0335 43.3668C47.1583 44.242 46.6667 45.429 46.6667 46.6667V79.3333ZM51.3333 32.6667H79.3333C80.571 32.6667 81.758 32.175 82.6332 31.2998C83.5083 30.4247 84 29.2377 84 28V4.66667C84 3.42899 83.5083 2.242 82.6332 1.36683C81.758 0.491665 80.571 0 79.3333 0H51.3333C50.0957 0 48.9087 0.491665 48.0335 1.36683C47.1583 2.242 46.6667 3.42899 46.6667 4.66667V28C46.6667 29.2377 47.1583 30.4247 48.0335 31.2998C48.9087 32.175 50.0957 32.6667 51.3333 32.6667Z" fill="currentColor"></path>
 </svg></div><div class="swipefeed-toggle-inputs"><div v-text="item.name || 'Untitled Board'" v-if="store.editingBoardId !== item.id" v-on:click="store.startEditing(item.id)" class="heading-14 is--cc_board-pointer">Lorem ipsum dolor sit amet.</div><input v-focus="" class="form_field is--board w-input" maxlength="256" name="field-2" v-on:blur="store.updateBoardName(item.id, item.name)" data-name="Field 2" v-else="" v-model="item.name" placeholder="Enter a board name..." v-on:keyup="store.handleKeyup($event, item.id, item.name)" type="text" id="field-2" required=""></div></div><div class="auto-left"><div v-if="store.editingBoardId !== item.id" class="relative-2">#</div><div v-on:click="store.deleteBoard(item.id)" v-else="" class="button-outline is--small-version is--delete"><div class="button-icon w-embed"><svg width="20" height="20" viewBox="-1 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M9 3H15M3 6H21M19 6L18.2987 16.5193C18.1935 18.0975 18.1409 18.8867 17.8 19.485C17.4999 20.0118 17.0472 20.4353 16.5017 20.6997C15.882 21 15.0911 21 13.5093 21H10.4907C8.90891 21 8.11803 21 7.49834 20.6997C6.95276 20.4353 6.50009 20.0118 6.19998 19.485C5.85911 18.8867 5.8065 18.0975 5.70129 16.5193L5 6M10 10.5V15.5M14 10.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-</svg></div><div>Delete </div></div></div></div></div></div></div></div></div></div></div></div></div>
+</svg></div><div>Delete </div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div>
         `},
         empty: `
       <div class="empty-state_wrap">
@@ -571,6 +585,12 @@ const app = createApp({
     injectStyles();
     initCustomDropdown();
     search.start();
+    
+    // Fetch boards after initialization
+    if (this.token) {
+      this.fetchUserBoards();
+      this.fetchUserSwipefeed();
+    }
   }
 });
 
