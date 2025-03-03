@@ -1,0 +1,7 @@
+This project is being built with Webflow, Xano and Petite Vue.
+
+Here are some notes to remember:
+- Webflow cannot use @ directives such as @click. Instead, use v-on:click.
+- Some of the css classes are listed in the css files in this project, but others are not. Don't assume that all the css classes are listed, you might need to ask me for more context.
+- The backend is running in xano.
+- The frontend is running in Petite Vue.

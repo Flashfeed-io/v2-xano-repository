@@ -5,6 +5,7 @@ import { toast } from "/src/utils/toastManager.js";
 import { getUserData, logout, verifyAuth, checkAndGetToken } from "/src/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
 import Quill from "quill";
+import { getHeaders } from '/src/utils/constants.js';
 import { initUploadcare } from "/src/utils/uploadcare.js";
 import { initDatepicker } from "/src/utils/datepicker.js";
 import { initCleave } from "/src/utils/cleave.js";
@@ -204,10 +205,7 @@ async function importFromUrl(url) {
     
     const response = await fetch(requestUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: getHeaders(token),
       body: JSON.stringify(requestBody)
     });
 
@@ -249,10 +247,7 @@ async function handleProfile(action) {
       
       const response = await fetch(requestUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getHeaders(token),
         body: JSON.stringify({})
       });
 

@@ -1,0 +1,14 @@
+# App Launch Checklist
+
+## Critical Features
+- [ ] Intrastructure
+  - [ ] Set up proper testing/live environment for API calls
+
+- [ ] Ad Library Improvements
+  - [ ] Implement interactive dropdown for "Save to Board" feature
+
+- [ ] Copilot Rating System
+  - [ ] Implement real-time updates on suggestion clicks
+
+- [ ] Data Structure and Scraping
+  - [ ] Finalize JSON structure for scraped data
