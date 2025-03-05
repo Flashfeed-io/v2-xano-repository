@@ -153,18 +153,50 @@ const store = reactive({
         toast.info('Removing ad from all boards...');
       } else {
         // Just mark this specific board entry as deleting
+        // Don't affect the default board entry when removing from a user board
+        this.users_swipefeed = this.users_swipefeed.map(item => {
+          if (item.ad_id === parseInt(adId) && item.board_id === parseInt(boardId)) {
+            return { ...item, isDeleting: true };
+          }
+          return item;
+        });
         toast.info('Removing ad from board...');
       }
     } else {
       // Ad not saved - add it with optimistic flag
       const tempId = `temp-${Date.now()}`;
-      this.users_swipefeed.push({
-        id: tempId,
-        ad_id: parseInt(adId),
-        board_id: parseInt(boardId),
-        user_id: this.user.id,
-        isAdding: true  // Flag for optimistic UI
-      });
+      // When saving to a user board, also save to default board if not already saved
+      const defaultBoardEntry = this.users_swipefeed.find(item => 
+        item.ad_id === parseInt(adId) && item.board_id === this.user.default_board_id);
+      
+      if (!defaultBoardEntry && !isDefaultBoard) {
+        // Add to both the selected board and default board
+        this.users_swipefeed.push(
+          {
+            id: `temp-default-${Date.now()}`,
+            ad_id: parseInt(adId),
+            board_id: this.user.default_board_id,
+            user_id: this.user.id,
+            isAdding: true
+          },
+          {
+            id: tempId,
+            ad_id: parseInt(adId),
+            board_id: parseInt(boardId),
+            user_id: this.user.id,
+            isAdding: true
+          }
+        );
+      } else {
+        // Just add to the selected board
+        this.users_swipefeed.push({
+          id: tempId,
+          ad_id: parseInt(adId),
+          board_id: parseInt(boardId),
+          user_id: this.user.id,
+          isAdding: true
+        });
+      }
       toast.info('Saving ad to board...');
     }
 
@@ -191,7 +223,7 @@ const store = reactive({
             item.ad_id !== parseInt(adId) || !item.isDeleting);
           toast.success('Ad removed from all boards');
         } else {
-          // Only remove the specific board entry
+          // Only remove the specific board entry, preserving default board status
           this.users_swipefeed = this.users_swipefeed.filter(item => 
             !(item.ad_id === parseInt(adId) && 
               item.board_id === parseInt(boardId) && 
