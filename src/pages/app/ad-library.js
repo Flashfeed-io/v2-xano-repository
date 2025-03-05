@@ -529,7 +529,7 @@ window.addEventListener("DOMContentLoaded", () => {
   console.log('[DEBUG] Starting search');
   search.start();
 
-  // Masonry initialization
+  // search event handlers
   search.on("render", () => {
     console.log('[DEBUG] Render event - Start');
     const hitsList = document.querySelector(".webflow-hits-list");
@@ -561,6 +561,9 @@ Promise.all(Array.from(videos).map(video => {
     }
   });
 })).then(() => {
+  setTimeout(() => {
+    console.log(app.mount())
+  }, 100);
   console.log('[DEBUG] All videos loaded, initializing masonry');
   const msnry = new Masonry(hitsList, {
     itemSelector: ".webflow-hit-item",
@@ -579,25 +582,6 @@ Promise.all(Array.from(videos).map(video => {
   window.addEventListener('resize', () => {
     if (window.adLibraryMasonry) window.adLibraryMasonry.layout();
   });
-    });
-
-    //if saved
-    $(".alg_dashboard-area").each(function () {
-      const slug = $(this).attr("id");
-      const saveButton = $(this).find("[cc_data='alg_save']");
-      const score = $(this).find("[cc_score]");
-
-      //dummy array
-      const mySavedAds = [
-        "prey-for-the-devil",
-        "my-policeman",
-        "jerry-marge-go-large",
-      ];
-
-      //if saved
-      if (mySavedAds.includes(slug)) {
-        $(this).addClass("cc_request");
-      }
     });
     console.log('[DEBUG] Render event - Complete');
   });
