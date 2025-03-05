@@ -48,6 +48,15 @@
     color: #ececec;
 }
 
+/* Prevent parent hover effects when child is hovered */
+.cc_dropdown__list-item .boards_clickable:hover ~ * {
+  pointer-events: none;
+}
+
+.cc_dropdown__list-item:hover > .boards_clickable {
+  pointer-events: auto;
+}
+
 /* || Hits per page dropdown */
 
 .ais-HitsPerPage-select:focus,
