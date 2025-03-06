@@ -563,6 +563,7 @@ Promise.all(Array.from(videos).map(video => {
 })).then(() => {
   setTimeout(() => {
     console.log(app.mount())
+    initCustomDropdown();
   }, 100);
   console.log('[DEBUG] All videos loaded, initializing masonry');
   const msnry = new Masonry(hitsList, {
@@ -597,75 +598,76 @@ Promise.all(Array.from(videos).map(video => {
 
   // alternative to ix2
   $(document).ready(function () {
-    console.log('[DEBUG] Document ready - Start');
-
-    /*--algolia hits dropdown--*/
-    // open
-    function openDropdown(dropdownToggle, dropdownMenu) {
-      console.log('[DEBUG] Opening dropdown:', { 
-        toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
-        menu: dropdownMenu.length > 0 ? 'Found' : 'Not Found'
-      });
-
-      // Close all other dropdowns first
-      $(".alg_hit-dropdown-toggle").not(dropdownToggle).removeClass("w--open");
-      $(".alg_hit-dropdown-menu").not(dropdownMenu).removeClass("w--open");
-
-      // Open this dropdown
-      dropdownToggle.addClass("w--open");
-      dropdownMenu.addClass("w--open");
-    }
-
-    // close
-    function closeDropdown(dropdownToggle, dropdownMenu) {
-      console.log('[DEBUG] Closing dropdown:', {
-        toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
-        menu: dropdownMenu.length > 0 ? 'Found' : 'Not Found'
-      });
-      
-      dropdownToggle.removeClass("w--open");
-      dropdownMenu.removeClass("w--open");
-    }
-
-    // close on toggle reclick?
-    $(document).on("click", ".alg_hit-dropdown-toggle", function (event) {
-      event.stopPropagation();
-      
-      const dropdownToggle = $(this);
-      const dropdownMenu = dropdownToggle.next(".alg_hit-dropdown-menu");
-
-      if (dropdownMenu.hasClass("w--open")) {
-        if (!$(event.target).is('input[type="checkbox"]') && !$(event.target).closest('.w-checkbox').length) {
-          closeDropdown(dropdownToggle, dropdownMenu);
-        }
-      } else {
-        openDropdown(dropdownToggle, dropdownMenu);
-      }
-    });
-
-    // close on outside click
-    $(document).on("click", function(event) {
-      if ($(event.target).is('input[type="checkbox"]') || $(event.target).closest('.w-checkbox').length) {
-        return;
-      }
-
-      $(".alg_hit-dropdown-toggle").each(function() {
-        const dropdownToggle = $(this);
-        const dropdownMenu = dropdownToggle.next(".alg_hit-dropdown-menu");
-        if (dropdownMenu.hasClass("w--open")) {
-          closeDropdown(dropdownToggle, dropdownMenu);
-        }
-      });
-    });
-
-    /*--custom dropdown--*/
-    try {
-      console.log('[DEBUG] Skipping early dropdown initialization - will initialize in mounted hook');
-    } catch (error) {
-      console.error('[DEBUG] Error:', error);
-    }
+    customAlgoliaDropdown();
   });
 });
+
+// Dropdown functionality for Algolia hits
+function customAlgoliaDropdown() {
+
+  console.log('[DEBUG] running customAlgoliaDropdown');
+
+  /*--algolia hits dropdown--*/
+  // open
+  function openDropdown(dropdownToggle, dropdownMenu) {
+    console.log('[DEBUG] Opening dropdown:', { 
+      toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
+      menu: dropdownMenu.length > 0 ? 'Found' : 'Not Found'
+    });
+
+    // Close all other dropdowns first
+    $(".alg_hit-dropdown-toggle").not(dropdownToggle).removeClass("w--open");
+    $(".alg_hit-dropdown-menu").not(dropdownMenu).removeClass("w--open");
+
+    // Open this dropdown
+    dropdownToggle.addClass("w--open");
+    dropdownMenu.addClass("w--open");
+  }
+
+  // close
+  function closeDropdown(dropdownToggle, dropdownMenu) {
+    console.log('[DEBUG] Closing dropdown:', {
+      toggle: dropdownToggle.length > 0 ? 'Found' : 'Not Found',
+      menu: dropdownMenu.length > 0 ? 'Found' : 'Not Found'
+    });
+    
+    dropdownToggle.removeClass("w--open");
+    dropdownMenu.removeClass("w--open");
+  }
+
+  // close on toggle reclick?
+  $(document).on("click", ".alg_hit-dropdown-toggle", function (event) {
+    event.stopPropagation();
+    
+    const dropdownToggle = $(this);
+    const dropdownMenu = dropdownToggle.next(".alg_hit-dropdown-menu");
+
+    if (dropdownMenu.hasClass("w--open")) {
+      if (!$(event.target).is('input[type="checkbox"]') && !$(event.target).closest('.w-checkbox').length) {
+        closeDropdown(dropdownToggle, dropdownMenu);
+      }
+    } else {
+      openDropdown(dropdownToggle, dropdownMenu);
+    }
+  });
+
+  // close on outside click
+  $(document).on("click", function(event) {
+    if ($(event.target).is('input[type="checkbox"]') || $(event.target).closest('.w-checkbox').length) {
+      return;
+    }
+
+    $(".alg_hit-dropdown-toggle").each(function() {
+      const dropdownToggle = $(this);
+      const dropdownMenu = dropdownToggle.next(".alg_hit-dropdown-menu");
+      if (dropdownMenu.hasClass("w--open")) {
+        closeDropdown(dropdownToggle, dropdownMenu);
+      }
+    });
+  });
+
+}
+
 
 /*--initializers----------------------------------------------------------*/
 const debugStore = StoreDebugger.init(store);
