@@ -36,13 +36,16 @@ const store = reactive({
   users_swipefeed: [],
   defaultBoard: null,
   editingBoardId: null,
+  currentAdDetails: {},
+  isUpdatingBoard: [],
 
   // Methods for board management
   startEditing(itemId, event) {
     console.log('[DEBUG] Starting edit mode for:', itemId);
-    
+    console.log('[DEBUG] Starting edit modes event click:', event);
+
     // Prevent event bubbling
-    event.stopPropagation();
+    // event.stopPropagation();
     
     const boardItem = event.target.closest('.cc_vue-for-swipefeed-boards');
     console.log('[DEBUG] Found board item:', boardItem);
@@ -152,6 +155,9 @@ const store = reactive({
 
   // Add method to save ad to board
   async saveAdToBoard(adId, boardId) {
+
+    if(this.isUpdatingBoard[boardId]) return;
+
     // Check if this is the default board
     const isDefaultBoard = boardId === this.user.default_board_id;
     
@@ -222,6 +228,8 @@ const store = reactive({
       toast.info('Saving ad to board...');
     }
 
+    this.isUpdatingBoard[boardId] = true;
+
     try {
       const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards/save_ad', {
         method: 'POST',
@@ -236,6 +244,8 @@ const store = reactive({
       if (!response.ok) throw new Error('Failed to save ad to board');
       
       const result = await response.json();
+      
+      this.isUpdatingBoard[boardId] = false;
       
       // Update with actual data
       if (existingEntry) {
@@ -503,7 +513,7 @@ window.addEventListener("DOMContentLoaded", () => {
           console.log('[DEBUG] Hit record:', hit);
 
           return `
-<div class="alg_dashboard-area"><div class="alg_dashboard-block"><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="${hit.brand_image}" class="alg_brand-image"></div><div><div class="alg_hit-brand-name">${hit.brand_name}</div><div class="div-block-641"><div class="subtext-11">${hit.industry}</div></div></div></div><div class="alg_hit-rating-wrap"><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div cc_score-bar="" class="alg_hit-rating"></div></div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown"><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<div class="alg_dashboard-area"><div class="alg_dashboard-block"><div data-w-id="93904b9a-93bb-5831-5365-df4d4a373366" class="launch-ad-details"></div><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-padding is--top"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="${hit.brand_image}" class="alg_brand-image"></div><div class="v-flex-025"><div class="alg_hit-brand-name">${hit.brand_name}</div><div class="div-block-641"><div class="subtext-11">${hit.industry}</div></div></div></div><div class="alg_hit-rating-wrap"><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div cc_score-bar="" class="alg_hit-rating"></div></div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown"><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -525,9 +535,9 @@ window.addEventListener("DOMContentLoaded", () => {
 <path d="M4.66667 46.6667H32.6667C33.9043 46.6667 35.0913 46.175 35.9665 45.2998C36.8417 44.4247 37.3333 43.2377 37.3333 42V4.66667C37.3333 3.42899 36.8417 2.242 35.9665 1.36683C35.0913 0.491665 33.9043 0 32.6667 0H4.66667C3.42899 0 2.242 0.491665 1.36683 1.36683C0.491665 2.242 0 3.42899 0 4.66667V42C0 43.2377 0.491665 44.4247 1.36683 45.2998C2.242 46.175 3.42899 46.6667 4.66667 46.6667ZM0 79.3333C0 80.571 0.491665 81.758 1.36683 82.6332C2.242 83.5083 3.42899 84 4.66667 84H32.6667C33.9043 84 35.0913 83.5083 35.9665 82.6332C36.8417 81.758 37.3333 80.571 37.3333 79.3333V60.6667C37.3333 59.429 36.8417 58.242 35.9665 57.3668C35.0913 56.4917 33.9043 56 32.6667 56H4.66667C3.42899 56 2.242 56.4917 1.36683 57.3668C0.491665 58.242 0 59.429 0 60.6667V79.3333ZM46.6667 79.3333C46.6667 80.571 47.1583 81.758 48.0335 82.6332C48.9087 83.5083 50.0957 84 51.3333 84H79.3333C80.571 84 81.758 83.5083 82.6332 82.6332C83.5083 81.758 84 80.571 84 79.3333V46.6667C84 45.429 83.5083 44.242 82.6332 43.3668C81.758 42.4917 80.571 42 79.3333 42H51.3333C50.0957 42 48.9087 42.4917 48.0335 43.3668C47.1583 44.242 46.6667 45.429 46.6667 46.6667V79.3333ZM51.3333 32.6667H79.3333C80.571 32.6667 81.758 32.175 82.6332 31.2998C83.5083 30.4247 84 29.2377 84 28V4.66667C84 3.42899 83.5083 2.242 82.6332 1.36683C81.758 0.491665 80.571 0 79.3333 0H51.3333C50.0957 0 48.9087 0.491665 48.0335 1.36683C47.1583 2.242 46.6667 3.42899 46.6667 4.66667V28C46.6667 29.2377 47.1583 30.4247 48.0335 31.2998C48.9087 32.175 50.0957 32.6667 51.3333 32.6667Z" fill="#212936"></path>
 </svg></div><div v-if="store.editingBoardId !== item.id" class="icon-20 relative-10 w-embed"><svg width="16" height="16" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M4.66667 46.6667H32.6667C33.9043 46.6667 35.0913 46.175 35.9665 45.2998C36.8417 44.4247 37.3333 43.2377 37.3333 42V4.66667C37.3333 3.42899 36.8417 2.242 35.9665 1.36683C35.0913 0.491665 33.9043 0 32.6667 0H4.66667C3.42899 0 2.242 0.491665 1.36683 1.36683C0.491665 2.242 0 3.42899 0 4.66667V42C0 43.2377 0.491665 44.4247 1.36683 45.2998C2.242 46.175 3.42899 46.6667 4.66667 46.6667ZM0 79.3333C0 80.571 0.491665 81.758 1.36683 82.6332C2.242 83.5083 3.42899 84 4.66667 84H32.6667C33.9043 84 35.0913 83.5083 35.9665 82.6332C36.8417 81.758 37.3333 80.571 37.3333 79.3333V60.6667C37.3333 59.429 36.8417 58.242 35.9665 57.3668C35.0913 56.4917 33.9043 56 32.6667 56H4.66667C3.42899 56 2.242 56.4917 1.36683 57.3668C0.491665 58.242 0 59.429 0 60.6667V79.3333ZM46.6667 79.3333C46.6667 80.571 47.1583 81.758 48.0335 82.6332C48.9087 83.5083 50.0957 84 51.3333 84H79.3333C80.571 84 81.758 83.5083 82.6332 82.6332C83.5083 81.758 84 80.571 84 79.3333V46.6667C84 45.429 83.5083 44.242 82.6332 43.3668C81.758 42.4917 80.571 42 79.3333 42H51.3333C50.0957 42 48.9087 42.4917 48.0335 43.3668C47.1583 44.242 46.6667 45.429 46.6667 46.6667V79.3333ZM51.3333 32.6667H79.3333C80.571 32.6667 81.758 32.175 82.6332 31.2998C83.5083 30.4247 84 29.2377 84 28V4.66667C84 3.42899 83.5083 2.242 82.6332 1.36683C81.758 0.491665 80.571 0 79.3333 0H51.3333C50.0957 0 48.9087 0.491665 48.0335 1.36683C47.1583 2.242 46.6667 3.42899 46.6667 4.66667V28C46.6667 29.2377 47.1583 30.4247 48.0335 31.2998C48.9087 32.175 50.0957 32.6667 51.3333 32.6667Z" fill="currentColor"></path>
-</svg></div><div class="cc_swipefeed-toggle-inputs"><div v-text="item.name || 'Untitled Board'" v-if="store.editingBoardId !== item.id" v-on:click="store.startEditing(item.id)" class="heading-14">Lorem ipsum dolor sit amet.</div></div></div><div class="auto-left relative-10"><div v-if="store.editingBoardId !== item.id" class="relative-2">#</div><div v-on:click="store.deleteBoard(item.id)" v-else="" class="button-outline is--small-version is--delete"><div class="button-icon w-embed"><svg width="20" height="20" viewBox="-1 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+</svg></div><div v-if="store.editingBoardId !== item.id" v-on:click="store.startEditing(item.id, $event)" class="cc_swipefeed-toggle-inputs"><div v-text="item.name || 'Untitled Board'" class="heading-14">Lorem ipsum dolor sit amet.</div></div></div><div class="auto-left relative-10"><div v-if="store.editingBoardId !== item.id" class="relative-2">#</div><div v-on:click="store.deleteBoard(item.id)" v-else="" class="button-outline is--small-version is--delete"><div class="button-icon w-embed"><svg width="20" height="20" viewBox="-1 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M9 3H15M3 6H21M19 6L18.2987 16.5193C18.1935 18.0975 18.1409 18.8867 17.8 19.485C17.4999 20.0118 17.0472 20.4353 16.5017 20.6997C15.882 21 15.0911 21 13.5093 21H10.4907C8.90891 21 8.11803 21 7.49834 20.6997C6.95276 20.4353 6.50009 20.0118 6.19998 19.485C5.85911 18.8867 5.8065 18.0975 5.70129 16.5193L5 6M10 10.5V15.5M14 10.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-</svg></div><div>Delete </div></div></div></div><div v-bind:class="{ 'is--cc_saved': store.users_swipefeed.some(swipefeed => swipefeed.ad_id === ${hit.id} &amp;&amp; swipefeed.board_id === item.id &amp;&amp; !swipefeed.isDeleting) }" v-on:click="store.saveAdToBoard(${hit.id}, item.id)" v-if="store.editingBoardId !== item.id" class="boards_clickable"></div></div></div></div></div></div></div></div></div></div></div></div>
+</svg></div><div>Delete </div></div></div></div><div v-bind:class="{ 'is--cc_saved': store.users_swipefeed.some(swipefeed => swipefeed.ad_id === ${hit.id} &amp;&amp; swipefeed.board_id === item.id &amp;&amp; !swipefeed.isDeleting) }" v-on:click="store.saveAdToBoard(${hit.id}, item.id)" v-if="store.editingBoardId !== item.id" class="boards_clickable"></div></div></div></div></div></div></div></div></div></div></div></div></div>
         `},
         empty: `
       <div class="empty-state_wrap">
@@ -548,6 +558,10 @@ window.addEventListener("DOMContentLoaded", () => {
   // search event handlers
   search.on("render", () => {
     console.log('[DEBUG] Render event - Start');
+    if (typeof Webflow !== 'undefined' && Webflow.require('ix2')) {
+      Webflow.require('ix2').init();
+      console.log('[DEBUG] Webflow and IX2 loaded');
+    }
     const hitsList = document.querySelector(".webflow-hits-list");
     if (!hitsList) {
       console.error('[DEBUG] Hits list container not found');
