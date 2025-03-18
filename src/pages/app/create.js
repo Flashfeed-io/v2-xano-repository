@@ -45,7 +45,9 @@ const store = reactive({
     console.log('All cookies:', document.cookie);
     const authCookie = document.cookie.split(';')
       .find(c => c.trim().startsWith('ff_auth='));
-    return authCookie ? authCookie.split('=')[1] : '';
+    const token = authCookie ? decodeURIComponent(authCookie.split('=')[1].trim()) : '';
+    console.log('Auth token:', token);
+    return token;
   })(),
   isSaving: false,
   isImporting: false,
@@ -92,23 +94,12 @@ const store = reactive({
     }
   }),
   api: {
-    profiles: [
-      {
-        id: "1",
-        brand: "Nike",
-        product: "Air Max 2024"
-      },
-      {
-        id: "2",
-        brand: "Adidas",
-        product: "Ultra Boost"
-      },
-      {
-        id: "3",
-        brand: "Puma",
-        product: "RS-X"
-      }
-    ]
+    profiles: [],
+    isLoadingProfiles: false,
+    boards: [],
+    isLoadingBoards: false,
+    users_swipefeed: [],
+    isLoadingSwipefeed: false
   },
   sync: {
     //main
@@ -123,10 +114,6 @@ const store = reactive({
     //helpers
     helpers: {
       toggle_show_profile: false,
-      toggle_generate_script: true,
-      toggle_generate_action_description: true,
-      toggle_generate_text_on_screen: false,
-      toggle_script_language: "English",
       toggle_visibility_source_script: true,
       toggle_visibility_script: true,
       toggle_visibility_action_description: true,
@@ -135,8 +122,6 @@ const store = reactive({
     },
     //profiles
     selectedProfile: {
-      toggle_summary: true,
-      toggle_key_highlights: true,
       id: "",
       image: "",
       brand: "Brand",
@@ -146,6 +131,10 @@ const store = reactive({
       key_highlights: "",
       toggle_custom_prompt: false,
       customPrompt: "",
+      toggle_generate_script: true,
+      toggle_generate_action_description: true,
+      toggle_generate_text_on_screen: false,
+      toggle_script_language: "English",
       facebook: "",
       instagram: "",
       tiktok: "",
@@ -186,6 +175,73 @@ const store = reactive({
       suggestions: []
     }
   },
+
+  // Add method to fetch user's profile
+  async fetchUserProfiles() {
+    try {
+      store.api.isLoadingProfiles = true;
+      console.log('Fetching profile with token:', store.token);
+      const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/profiles/me', {
+        method: 'GET',
+        headers: getHeaders(store.token)
+      });
+
+      console.log('Profile response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch profile: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Profile response data:', data);
+      
+      store.api.profiles = data;
+      toast.success('Profiles loaded successfully');
+      
+      console.log('[DEBUG] Fetched profile:', {
+        profiles: store.api.profiles
+      });
+      return true;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      toast.error('Failed to load your profile');
+      store.api.profiles = []; // Reset to empty array on error
+      return false;
+    } finally {
+      store.api.isLoadingProfiles = false;
+    }
+  },
+
+  // Add method to delete a profile
+  async deleteProfile(id) {
+    console.log('Deleting profile with id:', id);
+    try {
+      const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/profiles/delete/${id}`, {
+        method: 'DELETE',
+        headers: getHeaders(store.token)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete profile: ${response.status}`);
+      }
+
+      // Remove the deleted profile from the local state
+      store.api.profiles = store.api.profiles.filter(profile => profile.id !== id);
+      toast.success('Profile deleted successfully');
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      toast.error('Failed to delete profile');
+    }
+  },
+
+  //end store
+
 });
 
 
@@ -243,7 +299,7 @@ async function handleProfile(action) {
       const token = checkAndGetToken(store);
       if (!token) return;
 
-      const requestUrl = 'https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/profile/new';
+      const requestUrl = 'https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/profiles/new';
       
       const response = await fetch(requestUrl, {
         method: 'POST',
@@ -479,13 +535,22 @@ console.log(
 /*--initializers----------------------------------------------------------*/
 const debugStore = StoreDebugger.init(store);
 
-// // Initial auth check
-// if (store.token) {
-//   const isAuthenticated = await verifyAuth(store);
-//   if (!isAuthenticated) {
-//     window.location.href = "/";
-//   }
-// }
+// Initial auth check
+if (store.token) {
+  const isAuthenticated = await verifyAuth(store);
+  if (!isAuthenticated) {
+    window.location.href = "/";
+  }
+  
+  // Fetch 
+  toast.success('Would fetch things now after auth');
+  await store.fetchUserProfiles();
+}
+
+if (store.token) {
+  toast.success('Getting user data...');
+  await getUserData(store);
+}
 
 await toast.init();
 

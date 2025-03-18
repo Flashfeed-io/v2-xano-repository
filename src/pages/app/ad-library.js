@@ -36,8 +36,21 @@ const store = reactive({
   users_swipefeed: [],
   defaultBoard: null,
   editingBoardId: null,
-  currentAdDetails: {},
+  toggle_ad_details: 'Details',
+  currentAdDetails: {
+    id: "",
+    video_url: "https://s3.amazonaws.com/webflow-prod-assets/5fc1e5460028ca196133dd46/65d40d8c32ca83f8d479439a_duolingo-videoidea-noaudio.mp4",
+    brand_name: "Brand Name",
+    platform: "Instagram",
+    industry: "Education",
+    run_time: "< 30 days",
+    purpose: "Direct Response",
+    score: "Legendary",
+    comments: "High",
+    likes: 10,
+    },
   isUpdatingBoard: [],
+  
 
   // Methods for board management
   startEditing(itemId, event) {
@@ -368,7 +381,7 @@ const store = reactive({
     toast.info('Fetching swipefeed...');
     try {
       const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/boards_ads/me', {
-        headers: getHeaders(this.token)
+        headers: getHeaders(store.token)
       });
       
       if (!response.ok) throw new Error('Failed to fetch swipefeed');
@@ -381,10 +394,48 @@ const store = reactive({
       toast.error('Failed to load your saved ads');
     }
   },
+
+/**
+ * Rewrites an ad using either Algolia hit or modal details
+ * @param {Object|null} adData - Algolia hit data (null when called from modal)
+ * @returns {Promise<boolean>} Success status
+ */
+async rewriteAd(adData = null) {
+  const adId = adData?.objectID || this.store.currentAdDetails?.id;
+  if (!adId) {
+      this.$toast.error('No ad ID found');
+      return false;
+  }
+
+  try {
+      const response = await fetch(
+          `https://x6c9-ohwk-nih4.n7d.xano.io/api:DHN2-_b_/ads/${adId}/rewrite`,
+          {
+              method: 'POST',
+              headers: getHeaders(store.token)
+          }
+      );
+
+      if (!response.ok) throw new Error('Failed to rewrite ad');
+      
+      this.$toast.success('Ad rewrite initiated');
+      
+      // Refresh modal data if needed
+      if (!adData && this.store.currentAdDetails) {
+          await this.store.fetchAdDetails(adId);
+      }
+      
+      return true;
+  } catch (error) {
+      console.error('Error:', error);
+      this.$toast.error('Failed to rewrite ad');
+      return false;
+  }
+},
+  
 });
 
-/*-----------------------------------------------------------------------------------------------------------------------------*/
-
+/* Algolia Rendering-----------------------------------------------------------------------------------------------------------------------------*/
 window.addEventListener("DOMContentLoaded", () => {
   // Inject styles first
   injectStyles();
@@ -750,8 +801,7 @@ const app = createApp({
     if (this.token) {
       this.fetchUserBoards();
       this.fetchUserSwipefeed();
-    }
-  }
+    }  }
 });
 
 export { app };
