@@ -1,4 +1,5 @@
 import { createApp, reactive } from "petite-vue";
+import { effect } from "@vue/reactivity";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
 import { toast } from "/src/utils/toastManager.js";
@@ -12,6 +13,9 @@ import { initCleave } from "/src/utils/cleave.js";
 import { loadD3 } from "/src/utils/importedD3.js";
 import { initRadarCharts } from "/src/utils/initRadarCharts.js";
 import { createGaugeChart } from "/src/utils/copilot-gauge.js";
+//import { createStoreWatcher } from "/src/utils/storeWatcher.js";
+
+console.log('petitevue effect:', effect);
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -83,6 +87,7 @@ const store = reactive({
       store.sync?.copilot?.topScore || 79
     );
   },
+  //for copilot reactivity on gauge.
   dataToSync: new Proxy({}, {
     set(target, property, value) {
       target[property] = value;
@@ -104,25 +109,15 @@ const store = reactive({
   sync: {
     //main
     id: "",
-    lastSavedDate: new Date().toISOString().split('T')[0],
-    title: "",
-    folder_id: "",
-    status: "To Do",
-    due_date: new Date().toISOString().split('T')[0],
-    video_budget: 0,
-    description: "",
-    //helpers
-    helpers: {
-      toggle_show_profile: false,
-      toggle_visibility_source_script: true,
-      toggle_visibility_script: true,
-      toggle_visibility_action_description: true,
-      toggle_visibility_text_on_screen: false,
-      toggle_visibility_seconds: true,
+    //ad_id
+    ad_id: "",
+    //ad sync info
+    selectedInspiration: {
+      script: [],
     },
-    //profiles
+    profile_id: "",
+    //profile sync info
     selectedProfile: {
-      id: "",
       image: "",
       brand: "Brand",
       product: "",
@@ -143,10 +138,20 @@ const store = reactive({
       asset_files: [],
       notes: ""
     },
-    //inspiration
-    selectedInspiration: {
-      id: "",
-      script: [],
+    last_saved_date: new Date().toISOString().split('T')[0],
+    title: "",
+    status: "To Do",
+    due_date: new Date().toISOString().split('T')[0],
+    video_budget: 0,
+    description: "",
+    //helpers
+    helpers: {
+      toggle_show_profile: false,
+      toggle_visibility_source_script: true,
+      toggle_visibility_script: true,
+      toggle_visibility_action_description: true,
+      toggle_visibility_text_on_screen: false,
+      toggle_visibility_seconds: true,
     },
     importedInspirationList: [],
     //script
@@ -238,14 +243,10 @@ const store = reactive({
       console.error('Error deleting profile:', error);
       toast.error('Failed to delete profile');
     }
-  },
-
-  //end store
-
+  }
 });
 
-
-
+//end store
 
 /*--main code----------------------------------------------------------*/
 //import from url
@@ -500,7 +501,7 @@ const initCheckboxStates = () => {
 quillCustomPrompt.on(
   "text-change",
   function (delta, oldDelta, source) {
-    store.fields.brand_service_or_product =
+    store.sync.selectedProfile.brand_service_or_product =
       quillCustomPrompt.container.children[0].innerHTML;
 
     console.log(
@@ -625,7 +626,35 @@ window.initMasonry = function() {
 const app = createApp({
   store,
   editableContent: '',
-  
+  watchSyncTimeout: null,
+  watchSync() {
+    // Create an effect that watches store.sync
+    const effectFn = effect(() => {
+      // Access store.sync to track it
+      JSON.stringify(this.store.sync);
+      
+      if (this.watchSyncTimeout) {
+        clearTimeout(this.watchSyncTimeout);
+      }
+
+      this.watchSyncTimeout = setTimeout(() => {
+        const syncSnapshot = JSON.stringify(this.store.sync);
+        console.log("Sync properties changed:", syncSnapshot);
+        
+        // Commented out API call for testing
+        /*fetch("/api/saveSync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: syncSnapshot
+        })*/
+
+        // Show success toast instead
+        toast.success("Sync data saved successfully!");
+      }, 1000);
+    });
+
+    return effectFn;  // Return the effect for cleanup
+  },
   updateContent(event) {
     console.log('Content updated:', event.target.textContent);
     this.editableContent = event.target.textContent;
@@ -659,6 +688,7 @@ const app = createApp({
     }
   },
   mounted() {
+    //createStoreWatcher(store);
     console.log('Mounting component...');
     
     // Initialize Uploadcare with proper configuration
