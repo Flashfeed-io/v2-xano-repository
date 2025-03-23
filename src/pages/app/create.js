@@ -13,9 +13,6 @@ import { initCleave } from "/src/utils/cleave.js";
 import { loadD3 } from "/src/utils/importedD3.js";
 import { initRadarCharts } from "/src/utils/initRadarCharts.js";
 import { createGaugeChart } from "/src/utils/copilot-gauge.js";
-//import { createStoreWatcher } from "/src/utils/storeWatcher.js";
-
-console.log('petitevue effect:', effect);
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -41,6 +38,42 @@ const quillCustomPrompt = createQuillEditor(
   `e.g. Rewrite the video with a different hook that is more engaging.`
 );
 
+const handleBriefURL = async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const uuid = urlParams.get('uuid');
+  
+  if (!uuid) {
+    console.error('No UUID provided in URL');
+    toast.error('Invalid brief URL');
+    return;
+  }
+
+  return initializeBrief(uuid);
+};
+
+const initializeBrief = async (profile_id) => {
+  try {
+    const token = checkAndGetToken(store);
+    if (!token) return;
+
+    const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/briefs/${profile_id}`, {
+      method: 'GET',
+      headers: getHeaders(token)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load brief');
+    }
+
+    const briefData = await response.json();
+    store.sync = briefData;
+    return briefData;
+  } catch (error) {
+    console.error('Error initializing brief:', error);
+    toast.error('Error loading brief: ' + error.message);
+    throw error;
+  }
+};
 
 /*--store----------------------------------------------------------*/
 const store = reactive({
@@ -58,6 +91,7 @@ const store = reactive({
   toggle_radar: "Direct Response",
   toggle_tabs: 'Script',
   gaugeElement: null,
+  new_import_link: "",
   async updateGauge() {
     console.log('updateGauge called, element:', store.gaugeElement);
     const gaugeElement = document.querySelector('[cc_data="copilot-gauge"]');
@@ -106,39 +140,40 @@ const store = reactive({
     users_swipefeed: [],
     isLoadingSwipefeed: false
   },
-  sync: {
-    //main
+  //profile sync info
+  syncSelectedProfile: {
     id: "",
-    //ad_id
-    ad_id: "",
-    //ad sync info
-    selectedInspiration: {
-      script: [],
-    },
-    profile_id: "",
-    //profile sync info
-    selectedProfile: {
-      image: "",
-      brand: "Brand",
-      product: "",
-      import_link: "",
-      summary: "",
-      key_highlights: "",
+    image: "",
+    brand_name: "Brand",
+    product: "",
+    import_link: "",
+    summary: "asdfasd",
+    customPrompt: "",
+    helpers: {
       toggle_custom_prompt: false,
-      customPrompt: "",
       toggle_generate_script: true,
       toggle_generate_action_description: true,
       toggle_generate_text_on_screen: false,
       toggle_script_language: "English",
-      facebook: "",
-      instagram: "",
-      tiktok: "",
-      youtube: "",
-      linkedin: "",
-      asset_files: [],
-      notes: ""
     },
-    last_saved_date: new Date().toISOString().split('T')[0],
+    facebook: "",
+    instagram: "",
+    tiktok: "",
+    youtube: "",
+    linkedin: "",
+    asset_files: [],
+    notes: ""
+  },
+  sync: {
+    //main brief info
+    id: null,
+    uuid: null,
+    ad_id: null,
+    profile_id: null, 
+    selectedInspiration: {
+      script: [],
+    },
+    updated_at: new Date().toISOString().split('T')[0],
     title: "",
     status: "To Do",
     due_date: new Date().toISOString().split('T')[0],
@@ -146,7 +181,6 @@ const store = reactive({
     description: "",
     //helpers
     helpers: {
-      toggle_show_profile: false,
       toggle_visibility_source_script: true,
       toggle_visibility_script: true,
       toggle_visibility_action_description: true,
@@ -180,6 +214,108 @@ const store = reactive({
       suggestions: []
     }
   },
+
+
+  watchBriefTimeout: null,
+  watchProfileTimeout: null,
+  lastSavedProfileId: null,
+
+  // Watch brief changes (store.sync)
+  watchBrief() {
+    return effect(() => {
+      // Access brief data to track it
+      const briefData = JSON.stringify(this.sync);
+      
+      if (this.watchBriefTimeout) {
+        clearTimeout(this.watchBriefTimeout);
+      }
+
+      this.watchBriefTimeout = setTimeout(async () => {
+        console.log("Brief data changed:", briefData);
+        
+        try {
+          /*await fetch("/api/briefs/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: briefData
+          });*/
+          toast.success("Brief saved successfully");
+        } catch (error) {
+          console.error("Error saving brief:", error);
+          toast.error("Failed to save brief");
+        }
+      }, 1000);
+    });
+  },
+
+  // Watch profile changes (store.syncSelectedProfile)
+  watchProfile() {
+    return effect(() => {
+      // Access profile data to track it
+      const profileData = JSON.stringify(this.syncSelectedProfile);
+      
+      if (this.watchProfileTimeout) {
+        clearTimeout(this.watchProfileTimeout);
+      }
+
+      this.watchProfileTimeout = setTimeout(async () => {
+        console.log("Profile data changed:", profileData);
+        
+        try {
+          await fetch("https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/profiles/edit", {
+            method: "PATCH",
+            headers: getHeaders(store.token),
+            body: JSON.stringify({ payload: JSON.parse(profileData) })
+          });
+          toast.success("Profile saved successfully");
+        } catch (error) {
+          console.error("Error saving profile:", error);
+          toast.error("Failed to save profile");
+        }
+      }, 1000);
+    });
+  },
+
+  // Helper method to save profile
+  async saveProfile(profileId) {
+    console.log("Saving profile:", profileId);
+    try {
+      const profileData = profileId === this.syncSelectedProfile.id ? 
+        this.syncSelectedProfile : 
+        this.api.profiles.find(p => p.id === profileId);
+
+      if (!profileData) {
+        console.warn("Profile not found:", profileId);
+        return;
+      }
+
+      /*await fetch("/api/profiles/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData)
+      });*/
+      toast.success("Profile saved successfully");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save profile");
+    }
+  },
+
+  // Method to switch profiles safely
+  async switchProfile(newProfileId) {
+    // First, save current profile if it exists
+    if (this.syncSelectedProfile?.id) {
+      await this.saveProfile(this.syncSelectedProfile.id);
+    }
+
+    // Then load the new profile
+    const newProfile = this.api.profiles.find(p => p.id === newProfileId);
+    if (newProfile) {
+      this.syncSelectedProfile = { ...newProfile };
+      this.sync.profile_id = newProfileId;
+    }
+  },
+
 
   // Add method to fetch user's profile
   async fetchUserProfiles() {
@@ -236,14 +372,22 @@ const store = reactive({
         throw new Error(`Failed to delete profile: ${response.status}`);
       }
 
-      // Remove the deleted profile from the local state
-      store.api.profiles = store.api.profiles.filter(profile => profile.id !== id);
+      // Refresh profiles list from backend
+      await store.fetchUserProfiles();
       toast.success('Profile deleted successfully');
     } catch (error) {
       console.error('Error deleting profile:', error);
       toast.error('Failed to delete profile');
     }
-  }
+  },
+
+  // Method to handle going back to profile list
+  async showProfileList() {
+    // Refresh profiles list
+    await store.fetchUserProfiles();
+    // Toggle view back to profile list
+    store.sync.profile_id = null;
+  },
 });
 
 //end store
@@ -292,8 +436,8 @@ async function importFromUrl(url) {
 
 
 //load or new profile
-async function handleProfile(action) {
-  console.log('[DEBUG] Starting handleProfile with action:', action);
+async function handleProfile(action, profileId) {
+  console.log('[DEBUG] Starting handleProfile with action:', action, 'profileId:', profileId);
   
   if (action === "new") {
     try {
@@ -317,15 +461,45 @@ async function handleProfile(action) {
 
       const data = await response.json();
       console.log('[DEBUG] Success response:', data);
+      store.syncSelectedProfile = data;
+      store.sync.profile_id = data.id;
+      
+      // Refresh the profiles list
+      await store.fetchUserProfiles();
     } catch (error) {
       console.error('[DEBUG] Error in handleProfile:', error);
       toast.error('Error handling profile: ' + error.message);
       throw error;
     }
   } else if (action === "load") {
-    console.log('[DEBUG] Load profile action triggered');
+    try {
+      const token = checkAndGetToken(store);
+      if (!token) return;
+
+      const requestUrl = `https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/profiles/me/${profileId}`;
+      
+      const response = await fetch(requestUrl, {
+        method: 'GET',
+        headers: getHeaders(token)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('[DEBUG] Error response:', errorData);
+        toast.error('Failed to load profile: ' + (errorData.message || 'Unknown error'));
+        throw new Error(errorData.message || 'Failed to load profile');
+      }
+
+      const data = await response.json();
+      console.log('[DEBUG] Success response:', data);
+      store.syncSelectedProfile = data;
+      store.sync.profile_id = data.id;
+    } catch (error) {
+      console.error('[DEBUG] Error in handleProfile:', error);
+      toast.error('Error loading profile: ' + error.message);
+      throw error;
+    }
   }
-  store.sync.helpers.toggle_show_profile = true;
   
 
   // Content editable inputs
@@ -347,13 +521,13 @@ async function handleProfile(action) {
       input.style.setProperty('--text-length', newLength);
 
       // Update store based on input id or placeholder
-      if (this.store.sync.selectedProfile) {
+      if (this.store.syncSelectedProfile) {
         if (e.target.placeholder === 'Brand Name' || e.target.dataset.name === 'Brand') {
           console.log('Updating brand in store:', newText);
-          this.store.sync.selectedProfile.brand = newText;
+          this.store.syncSelectedProfile.brand_name = newText;
         } else if (e.target.placeholder === 'Product' || e.target.dataset.name === 'Product') {
           console.log('Updating product in store:', newText);
-          this.store.sync.selectedProfile.product = newText;
+          this.store.syncSelectedProfile.product = newText;
         }
       }
     });
@@ -433,7 +607,7 @@ const updateGenerateText = (value) => {
 
 //profiles
 const addAssetFile = () => {
-    store.sync.selectedProfile.asset_files.push("");
+    store.syncSelectedProfile.asset_files.push("");
 };
 
 const setProductVisible = (triggerElement) => {
@@ -481,7 +655,7 @@ document.querySelectorAll('[cc_data="add-product"]').forEach((button) => {
 
 
 const removeAssetFile = (index) => {
-    store.sync.selectedProfile.asset_files.splice(index, 1);
+    store.syncSelectedProfile.asset_files.splice(index, 1);
 };
 
 const initCheckboxStates = () => {
@@ -501,7 +675,7 @@ const initCheckboxStates = () => {
 quillCustomPrompt.on(
   "text-change",
   function (delta, oldDelta, source) {
-    store.sync.selectedProfile.brand_service_or_product =
+    store.syncSelectedProfile.customPrompt =
       quillCustomPrompt.container.children[0].innerHTML;
 
     console.log(
@@ -626,35 +800,6 @@ window.initMasonry = function() {
 const app = createApp({
   store,
   editableContent: '',
-  watchSyncTimeout: null,
-  watchSync() {
-    // Create an effect that watches store.sync
-    const effectFn = effect(() => {
-      // Access store.sync to track it
-      JSON.stringify(this.store.sync);
-      
-      if (this.watchSyncTimeout) {
-        clearTimeout(this.watchSyncTimeout);
-      }
-
-      this.watchSyncTimeout = setTimeout(() => {
-        const syncSnapshot = JSON.stringify(this.store.sync);
-        console.log("Sync properties changed:", syncSnapshot);
-        
-        // Commented out API call for testing
-        /*fetch("/api/saveSync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: syncSnapshot
-        })*/
-
-        // Show success toast instead
-        toast.success("Sync data saved successfully!");
-      }, 1000);
-    });
-
-    return effectFn;  // Return the effect for cleanup
-  },
   updateContent(event) {
     console.log('Content updated:', event.target.textContent);
     this.editableContent = event.target.textContent;
@@ -688,7 +833,10 @@ const app = createApp({
     }
   },
   mounted() {
-    //createStoreWatcher(store);
+    // Initialize both watchers
+    store.watchBrief();
+    store.watchProfile();
+    
     console.log('Mounting component...');
     
     // Initialize Uploadcare with proper configuration
@@ -777,6 +925,12 @@ const app = createApp({
             numeralThousandsGroupStyle: 'thousand'
         });
     }
+
+    // Initialize brief based on URL
+    handleBriefURL().catch(error => {
+      console.error('Error handling brief URL:', error);
+      toast.error('Error initializing brief');
+    });
   },
   addAssetFile,
   removeAssetFile,
@@ -787,7 +941,9 @@ const app = createApp({
   importFromUrl,
   handleProfile,
   getBackgroundStyle,
-  setProductVisible
+  setProductVisible,
+  handleBriefURL,
+  initializeBrief
 });
 
 export { app };
