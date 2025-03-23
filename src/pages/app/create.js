@@ -67,6 +67,15 @@ const initializeBrief = async (uuid) => {
 
     const briefData = await response.json();
     store.sync = briefData;
+    
+    // Initialize checkboxes after brief data is loaded
+    initCheckboxStates();
+    
+    // Fetch source script if we have an ad_id
+    if (briefData.ad_id) {
+      await store.fetchSourceScript();
+    }
+    
     return briefData;
   } catch (error) {
     console.error('Error initializing brief:', error);
@@ -164,6 +173,10 @@ const store = reactive({
     asset_files: [],
     notes: ""
   },
+  selectedInspiration: {
+    script: [],
+    loading: false
+  },
   sync: {
     //main brief info
     id: null,
@@ -176,6 +189,33 @@ const store = reactive({
     due_date: new Date().toISOString().split('T')[0],
     video_budget: 0,
     description: "",
+    //script
+    script: [],
+    //imported inspiration list
+    imported_inspiration_list: [],
+    //copilot
+    copilot: {
+      score: 0,
+      virality: 0,
+      virality_radar: [
+        { category: 'Laughter', value: 0 },
+        { category: 'Shock', value: 0 },
+        { category: 'Amazement', value: 0 },
+        { category: 'Sentimental', value: 0 },
+        { category: 'Agitation', value: 0 },
+        { category: 'Intrigue', value: 0 }
+      ],
+      direct_response: 0,
+      direct_response_radar: [
+        { category: 'Urgency', value: 0 },
+        { category: 'Trust', value: 0 },
+        { category: 'Clarity', value: 0 },
+        { category: 'Desire', value: 0 },
+        { category: 'Value', value: 0 },
+        { category: 'Relevance', value: 0 }
+      ],
+      suggestions: []
+    },
     //helpers
     helpers: {
       toggle_visibility_source_script: true,
@@ -183,35 +223,6 @@ const store = reactive({
       toggle_visibility_action_description: true,
       toggle_visibility_text_on_screen: false,
       toggle_visibility_seconds: true,
-    },
-    importedInspirationList: [],
-    //script
-    script: [],
-    //copilot
-    copilot: {
-      score: 10,
-      virality: 0,
-      virality_radar: [
-        { category: 'Laughter', value: 4.2 },
-        { category: 'Shock', value: 3.6 },
-        { category: 'Amazement', value: 3.4 },
-        { category: 'Sentimental', value: 2.3 },
-        { category: 'Agitation', value: 1.5 },
-        { category: 'Intrigue', value: 2.8 }
-      ],
-      direct_response: 0,
-      direct_response_radar: [
-        { category: 'Urgency', value: 3.9 },
-        { category: 'Trust', value: 4.6 },
-        { category: 'Clarity', value: 4.2 },
-        { category: 'Desire', value: 4.4 },
-        { category: 'Value', value: 3.8 },
-        { category: 'Relevance', value: 4.1 }
-      ],
-      suggestions: []
-    },
-    selectedInspiration: {
-      script: [],
     }
   },
 
@@ -234,17 +245,17 @@ const store = reactive({
         console.log("Brief data changed:", briefData);
         
         try {
-          /*await fetch("/api/briefs/save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: briefData
-          });*/
+          await fetch("https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/brief/edit", {
+            method: "PATCH",
+            headers: getHeaders(this.token),
+            body: JSON.stringify({ payload: JSON.parse(briefData) })
+          });
           toast.success("Brief saved successfully");
         } catch (error) {
           console.error("Error saving brief:", error);
           toast.error("Failed to save brief");
         }
-      }, 1000);
+      }, 2500);
     });
   },
 
@@ -264,7 +275,7 @@ const store = reactive({
         try {
           await fetch("https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/profiles/edit", {
             method: "PATCH",
-            headers: getHeaders(store.token),
+            headers: getHeaders(this.token),
             body: JSON.stringify({ payload: JSON.parse(profileData) })
           });
           toast.success("Profile saved successfully");
@@ -272,7 +283,7 @@ const store = reactive({
           console.error("Error saving profile:", error);
           toast.error("Failed to save profile");
         }
-      }, 1000);
+      }, 2500);
     });
   },
 
@@ -387,6 +398,35 @@ const store = reactive({
     await store.fetchUserProfiles();
     // Toggle view back to profile list
     store.sync.profile_id = null;
+  },
+
+  // Add method to fetch source script
+  async fetchSourceScript() {
+    if (!this.sync.ad_id) return;
+    
+    try {
+      this.selectedInspiration.loading = true;
+      const token = checkAndGetToken(store);
+      if (!token) return;
+
+      const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/ad/${this.sync.ad_id}/script`, {
+        method: 'GET',
+        headers: getHeaders(token)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch source script');
+      }
+
+      const data = await response.json();
+      this.selectedInspiration.script = data.script || [];
+      
+    } catch (error) {
+      console.error('Error fetching source script:', error);
+      toast.error('Error loading source script: ' + error.message);
+    } finally {
+      this.selectedInspiration.loading = false;
+    }
   },
 });
 
@@ -557,9 +597,10 @@ const getDefaultTitle = () => {
 };
 
 const addScriptSection = () => {
-  if (!Array.isArray(store.sync.script)) {
+  if (!Array.isArray(store.sync.script) || store.sync.script.length === 0) {
       store.sync.script = [];
   }
+  
   store.sync.script.push({
     copilot: "green",                 // Copilot-generated color
     title: getDefaultTitle(),         // Hook for first, Body for rest
@@ -650,27 +691,58 @@ document.querySelectorAll('[cc_data="add-product"]').forEach((button) => {
   });
 });
 
-
-
-
-
 const removeAssetFile = (index) => {
     store.syncSelectedProfile.asset_files.splice(index, 1);
 };
 
 const initCheckboxStates = () => {
     console.log('[DEBUG] Init checkbox states');
-    // Set initial checkbox states
-    document.querySelectorAll('input[type="checkbox"][cc_data="startAsChecked"]').forEach(checkbox => {
-        checkbox.checked = true;
-        const checkboxDiv = checkbox.previousElementSibling;
-        if (checkboxDiv) {
-            checkboxDiv.classList.add('w--redirected-checked');
+    
+    const checkboxMappings = [
+        // Visibility toggles (store.sync.helpers)
+        {
+            selector: 'toggle_visibility_script',
+            value: () => store.sync.helpers.toggle_visibility_script
+        },
+        {
+            selector: 'toggle_visibility_action_description',
+            value: () => store.sync.helpers.toggle_visibility_action_description
+        },
+        {
+            selector: 'toggle_visibility_text_on_screen',
+            value: () => store.sync.helpers.toggle_visibility_text_on_screen
+        },
+        {
+            selector: 'toggle_visibility_source_script',
+            value: () => store.sync.helpers.toggle_visibility_source_script
+        },
+        // Generate toggles (store.syncSelectedProfile.helpers)
+        {
+            selector: 'toggle_generate_script',
+            value: () => store.syncSelectedProfile.helpers.toggle_generate_script
+        },
+        {
+            selector: 'toggle_generate_action_description',
+            value: () => store.syncSelectedProfile.helpers.toggle_generate_action_description
+        },
+        {
+            selector: 'toggle_generate_text_on_screen',
+            value: () => store.syncSelectedProfile.helpers.toggle_generate_text_on_screen
         }
-        console.log('[DEBUG] Checkbox checked:', checkbox);
+    ];
+
+    // Single loop to handle all checkbox types
+    checkboxMappings.forEach(mapping => {
+        document.querySelectorAll(`input[type="checkbox"][cc_data="${mapping.selector}"]`)
+            .forEach(checkbox => {
+                checkbox.checked = mapping.value();
+                const checkboxDiv = checkbox.previousElementSibling;
+                if (checkboxDiv) {
+                    checkboxDiv.classList.toggle('w--redirected-checked', checkbox.checked);
+                }
+            });
     });
 };
-
 
 quillCustomPrompt.on(
   "text-change",
@@ -832,6 +904,26 @@ const app = createApp({
       $el.style.setProperty('--text-length', text.length + 1);
     }
   },
+  updateCheckboxStyle(event) {
+    console.log('Checkbox state changed:', event);
+    // Get the checkbox input element
+    const checkbox = event.target;
+    console.log('Checkbox element:', checkbox);
+    // Get its previous sibling (the div)
+    const checkboxDiv = checkbox.previousElementSibling;
+    console.log('Checkbox div:', checkboxDiv);
+    
+    if (checkboxDiv && checkboxDiv.classList.contains('w-checkbox-input')) {
+      console.log('Checkbox div found:', checkboxDiv);
+      if (checkbox.checked) {
+        console.log('Checkbox checked, adding w--redirected-checked');
+        checkboxDiv.classList.add('w--redirected-checked');
+      } else {
+        console.log('Checkbox unchecked, removing w--redirected-checked');
+        checkboxDiv.classList.remove('w--redirected-checked');
+      }
+    }
+  },
   mounted() {
     // Initialize both watchers
     store.watchBrief();
@@ -903,8 +995,7 @@ const app = createApp({
     }, 1000);
     
 
-    // Initialize checkbox states
-    initCheckboxStates();
+
     setTimeout(() => {
       const elements = document.querySelectorAll('[cc_data-datepicker="true"]');
       console.log('🔍 About to initialize datepicker');
