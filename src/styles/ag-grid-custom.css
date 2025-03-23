@@ -1,0 +1,12 @@
+.ag-cell {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    --ag-line-height: 1 !important;
+    --ag-internal-content-line-height: 1.5 !important;
+    font-family: inherit !important;
+}
+
+.ag-header-cell {
+    font-family: inherit !important;
+}

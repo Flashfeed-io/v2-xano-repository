@@ -1,6 +1,7 @@
 // Import AG Grid styles
 //import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
+//import 'ag-grid-community/styles/ag-theme-alpine.css';
+import '/src/styles/ag-grid-custom.css';
 import { createApp, reactive } from "petite-vue";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
@@ -8,8 +9,36 @@ import { toast } from "/src/utils/toastManager.js";
 import { getUserData, logout, verifyAuth, checkAndGetToken } from "/src/utils/userData.js";
 import { getHeaders } from '/src/utils/constants.js';
 import { v4 as uuidv4 } from 'uuid';
-import { createGrid, AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+import { createGrid, AllCommunityModule, ModuleRegistry, themeQuartz, iconSetQuartzBold } from 'ag-grid-community';
 
+// Define custom theme
+const myTheme = themeQuartz
+	.withPart(iconSetQuartzBold)
+	.withParams({
+        accentColor: "#1C183CB8",
+        backgroundColor: "#ffffff",
+        borderColor: "#E9EAF2",
+        borderRadius: 4,
+        cellHorizontalPaddingScale: 0.5,
+        columnBorder: false,
+        foregroundColor: "#212936",
+        headerBackgroundColor: "#F9FAFB",
+        headerFontSize: 14,
+        headerFontWeight: 600,
+        headerRowBorder: false,
+        headerTextColor: "#919191",
+        oddRowBackgroundColor: "#F7F9FAA1",
+        rowBorder: false,
+        sidePanelBorder: true,
+        spacing: 13,
+        wrapperBorder: false,
+        wrapperBorderRadius: 0,
+        lineHeight: 1,
+        headerCellMinWidth: 0,
+        headerCellMovable: false,
+        headerCellResizable: false,
+        headerCellSeparator: false
+    });
 
 // Register all Community features
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -18,6 +47,10 @@ console.log('my-briefs.js: Starting script');
 console.log('my-briefs.js: AG Grid imported:',  createGrid);
 console.log('my-briefs.js: AG Grid modules imported:', AllCommunityModule);
 console.log('my-briefs.js: AG Grid ModuleRegistry imported:', ModuleRegistry);
+console.log('my-briefs.js: AG Grid themeQuartz imported:', themeQuartz);
+console.log('my-briefs.js: AG Grid iconSetQuartzBold imported:', iconSetQuartzBold);
+
+console.log('my-briefs.js: AG Grid theme imported:', myTheme);
 
 /*--store----------------------------------------------------------*/
 const store = reactive({
@@ -131,14 +164,52 @@ const store = reactive({
     // Basic grid options
     const gridOptions = {
       columnDefs: [
-        { field: 'id' },
-        { field: 'title' }
+        { 
+          field: 'title',
+          headerName: 'Title',
+          flex: 1,
+          minWidth: 200
+        },
+        {
+          field: 'status',
+          width: 120,
+          cellRenderer: params => {
+            let statusClass = '';
+            switch (params.value) {
+              case 'To Do': statusClass = 'cc_status-grey'; break;
+              case 'In Progress': statusClass = 'cc_status-orange'; break;
+              case 'Ready For Production': statusClass = 'cc_status-blue'; break;
+              case 'Live': statusClass = 'cc_status-green'; break;
+              default: statusClass = 'cc_status-grey';
+            }
+            return `<span class="${statusClass}">${params.value}</span>`;
+          }
+        },
+        {
+          field: 'created_at',
+          headerName: 'Created',
+          width: 120,
+          valueFormatter: params => {
+            return new Date(params.value).toLocaleDateString();
+          }
+        }
       ],
       rowData: [
-        { id: 1, title: 'Test Brief 1' },
-        { id: 2, title: 'Test Brief 2' }
+        { id: 1, title: 'Test Brief 1', status: 'To Do', created_at: '2024-03-23' },
+        { id: 2, title: 'Test Brief 2', status: 'In Progress', created_at: '2024-03-22' }
       ],
-      modules: [AllCommunityModule]
+      defaultColDef: {
+        sortable: false,
+        filter: false
+      },
+      rowSelection: {
+        mode: 'multiRow',
+        checkboxSelection: true,
+        headerCheckbox: true
+      },
+      headerHeight: 48,
+      rowHeight: 48,
+      theme: myTheme
     };
 
     // Create the grid
