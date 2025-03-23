@@ -1,3 +1,6 @@
+// Import AG Grid styles
+//import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { createApp, reactive } from "petite-vue";
 import { StoreDebugger } from "/src/utils/storeDebugger.js";
 import { WebflowFormComponent } from "/src/components/WebflowFormComponent.js";
@@ -5,6 +8,16 @@ import { toast } from "/src/utils/toastManager.js";
 import { getUserData, logout, verifyAuth, checkAndGetToken } from "/src/utils/userData.js";
 import { getHeaders } from '/src/utils/constants.js';
 import { v4 as uuidv4 } from 'uuid';
+import { createGrid, AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+
+
+// Register all Community features
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+console.log('my-briefs.js: Starting script');
+console.log('my-briefs.js: AG Grid imported:',  createGrid);
+console.log('my-briefs.js: AG Grid modules imported:', AllCommunityModule);
+console.log('my-briefs.js: AG Grid ModuleRegistry imported:', ModuleRegistry);
 
 /*--store----------------------------------------------------------*/
 const store = reactive({
@@ -20,6 +33,7 @@ const store = reactive({
 
   // Fetch user's briefs
   async fetchUserBriefs() {
+    console.log('my-briefs.js: Fetching user briefs');
     try {
       this.isLoadingBriefs = true;
       const token = checkAndGetToken(store);
@@ -36,8 +50,9 @@ const store = reactive({
 
       const data = await response.json();
       this.briefs = data;
+      console.log('my-briefs.js: Briefs fetched:', data.length);
     } catch (error) {
-      console.error('Error fetching briefs:', error);
+      console.error('my-briefs.js: Error fetching briefs:', error);
       toast.error('Error loading briefs: ' + error.message);
     } finally {
       this.isLoadingBriefs = false;
@@ -102,33 +117,68 @@ const store = reactive({
       toast.error('Error deleting brief: ' + error.message);
       throw error;
     }
+  },
+
+  // Initialize AG Grid
+  initGrid() {
+    console.log('Initializing AG Grid');
+    const gridDiv = document.querySelector('[data-ag-grid]');
+    if (!gridDiv) {
+      console.error('Grid div not found');
+      return;
+    }
+
+    // Basic grid options
+    const gridOptions = {
+      columnDefs: [
+        { field: 'id' },
+        { field: 'title' }
+      ],
+      rowData: [
+        { id: 1, title: 'Test Brief 1' },
+        { id: 2, title: 'Test Brief 2' }
+      ],
+      modules: [AllCommunityModule]
+    };
+
+    // Create the grid
+    try {
+      createGrid(gridDiv, gridOptions);
+      console.log('Grid initialized successfully');
+    } catch (error) {
+      console.error('Error initializing grid:', error);
+    }
   }
 });
 
 /*--initializers----------------------------------------------------------*/
+console.log('my-briefs.js: Starting initializers');
 const debugStore = StoreDebugger.init(store);
 
 // Initial auth check
 if (store.token) {
+  console.log('my-briefs.js: Verifying auth');
   const isAuthenticated = await verifyAuth(store);
   if (!isAuthenticated) {
+    console.log('my-briefs.js: Not authenticated, redirecting');
     window.location.href = "/";
   }
   
-  // Fetch 
-  toast.success('Would fetch things now after auth');
+  console.log('my-briefs.js: Authenticated, fetching briefs');
   await store.fetchUserBriefs();
+  store.initGrid(); // Initialize grid after fetching briefs
 }
 
 if (store.token) {
-  toast.success('Getting user data...');
+  console.log('my-briefs.js: Getting user data');
   await getUserData(store);
 }
 
+console.log('my-briefs.js: Initializing toast');
 await toast.init();
 
-
 /*--mount----------------------------------------------------------*/
+console.log('my-briefs.js: Creating app');
 const app = createApp({
   store,
   WebflowFormComponent,
@@ -142,18 +192,19 @@ const app = createApp({
   handleStatusClick(status) {
     Object.assign(store.sync, { status });
   },
-
-  mounted() {
-    // Check authentication
-    verifyAuth(store).then(isAuthenticated => {
-      if (!isAuthenticated) {
-        window.location.href = '/login';
-        return;
-      }
-      // Load user's briefs
-      store.fetchUserBriefs();
-    });
+  async mounted() {
+    try {
+      console.log('my-briefs.js: App mounted');
+      // Display briefs count
+      console.log('my-briefs.js: Current briefs:', store.briefs.length);
+    } catch (error) {
+      console.error('my-briefs.js: Error in app mount:', error);
+    }
   }
 });
 
+console.log('my-briefs.js: Mounting app');
+app.mount();
+
+console.log('my-briefs.js: App mounted, exporting');
 export { app };
