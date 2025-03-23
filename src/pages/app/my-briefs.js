@@ -63,6 +63,8 @@ const store = reactive({
   })(),
   briefs: [],
   isLoadingBriefs: false,
+  gridApi: null,
+  selectedBriefs: [], // Track selected briefs
 
   // Fetch user's briefs
   async fetchUserBriefs() {
@@ -127,28 +129,32 @@ const store = reactive({
     }
   },
 
-  // Delete a brief
-  async deleteBrief(briefId) {
+  // Delete multiple briefs
+  async deleteSelectedBriefs() {
     try {
       const token = checkAndGetToken(store);
       if (!token) return;
 
-      const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/brief/${briefId}`, {
+      const payload = this.selectedBriefs.map(brief => brief.id);
+      
+      const response = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/brief/delete', {
         method: 'DELETE',
-        headers: getHeaders(token)
+        headers: getHeaders(token),
+        body: JSON.stringify({ payload })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete brief');
+        throw new Error('Failed to delete briefs');
       }
 
       // Remove from local state
-      this.briefs = this.briefs.filter(brief => brief.id !== briefId);
-      toast.success('Brief deleted successfully');
+      const deletedIds = new Set(payload);
+      this.briefs = this.briefs.filter(brief => !deletedIds.has(brief.id));
+      this.selectedBriefs = []; // Clear selection
+      toast.success('Briefs deleted successfully');
     } catch (error) {
-      console.error('Error deleting brief:', error);
-      toast.error('Error deleting brief: ' + error.message);
-      throw error;
+      console.error('Error deleting briefs:', error);
+      toast.error('Error deleting briefs: ' + error.message);
     }
   },
 
@@ -194,10 +200,7 @@ const store = reactive({
           }
         }
       ],
-      rowData: [
-        { id: 1, title: 'Test Brief 1', status: 'To Do', created_at: '2024-03-23' },
-        { id: 2, title: 'Test Brief 2', status: 'In Progress', created_at: '2024-03-22' }
-      ],
+      rowData: this.briefs,
       defaultColDef: {
         sortable: false,
         filter: false
@@ -208,14 +211,32 @@ const store = reactive({
         headerCheckbox: true
       },
       headerHeight: 48,
-      rowHeight: 48,
-      theme: myTheme
+      rowHeight: 58,
+      theme: myTheme,
+      onSelectionChanged: params => {
+        const selectedRows = params.api.getSelectedRows();
+        console.log('Selected rows:', selectedRows);
+        this.selectedBriefs = selectedRows; // Update selected briefs
+      },
+      onRowClicked: params => {
+        const uuid = params.data.uuid;
+        if (uuid) {
+          window.location.href = `/app/create?uuid=${uuid}`;
+        }
+      }
     };
 
     // Create the grid
     try {
       createGrid(gridDiv, gridOptions);
       console.log('Grid initialized successfully');
+      
+      // Store grid API reference for future updates
+      this.gridApi = gridOptions.api;
+      
+      // Set initial data
+      this.gridApi.setRowData(this.briefs);
+      
     } catch (error) {
       console.error('Error initializing grid:', error);
     }
@@ -237,7 +258,6 @@ if (store.token) {
   
   console.log('my-briefs.js: Authenticated, fetching briefs');
   await store.fetchUserBriefs();
-  store.initGrid(); // Initialize grid after fetching briefs
 }
 
 if (store.token) {
@@ -268,6 +288,7 @@ const app = createApp({
       console.log('my-briefs.js: App mounted');
       // Display briefs count
       console.log('my-briefs.js: Current briefs:', store.briefs.length);
+      store.initGrid(); // Initialize grid after fetching briefs
     } catch (error) {
       console.error('my-briefs.js: Error in app mount:', error);
     }

@@ -51,12 +51,12 @@ const handleBriefURL = async () => {
   return initializeBrief(uuid);
 };
 
-const initializeBrief = async (profile_id) => {
+const initializeBrief = async (uuid) => {
   try {
     const token = checkAndGetToken(store);
     if (!token) return;
 
-    const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:WPrn5YFa/briefs/${profile_id}`, {
+    const response = await fetch(`https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/brief/me/${uuid}`, {
       method: 'GET',
       headers: getHeaders(token)
     });
@@ -170,9 +170,6 @@ const store = reactive({
     uuid: null,
     ad_id: null,
     profile_id: null, 
-    selectedInspiration: {
-      script: [],
-    },
     updated_at: new Date().toISOString().split('T')[0],
     title: "",
     status: "To Do",
@@ -212,6 +209,9 @@ const store = reactive({
         { category: 'Relevance', value: 4.1 }
       ],
       suggestions: []
+    },
+    selectedInspiration: {
+      script: [],
     }
   },
 

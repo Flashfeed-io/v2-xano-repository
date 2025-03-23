@@ -5,8 +5,25 @@
     --ag-line-height: 1 !important;
     --ag-internal-content-line-height: 1.5 !important;
     font-family: inherit !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
 }
 
 .ag-header-cell {
     font-family: inherit !important;
+}
+
+/* Remove cell focus */
+.ag-cell:focus {
+    outline: none !important;
+    border: none !important;
+}
+
+.ag-cell.ag-cell-focus {
+    border: none !important;
+}
+
+/* Make row clickable */
+.ag-row {
+    cursor: pointer;
 }

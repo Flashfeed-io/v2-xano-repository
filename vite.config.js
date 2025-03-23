@@ -18,19 +18,28 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['petite-vue']
+    include: ['petite-vue', 'ag-grid-community'],
+    exclude: []
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
       input: {
-        'ad-library': resolve(__dirname, 'src/pages/app/ad-library.js')
+        'ad-library': resolve(__dirname, 'src/pages/app/ad-library.js'),
+        'my-briefs': resolve(__dirname, 'src/pages/app/my-briefs.js')
       },
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name]-[hash].js',
         assetFileNames: '[name]-[hash][extname]'
+      }
+    }
+  },
+  css: {
+    preprocessorOptions: {
+      css: {
+        charset: false
       }
     }
   }

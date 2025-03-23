@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@vue/reactivity": "^3.5.13",
+    "ag-grid-community": "^33.1.1",
     "cleave.js": "^1.6.0",
     "flatpickr": "^4.6.13",
     "imagesloaded": "^5.0.0",
