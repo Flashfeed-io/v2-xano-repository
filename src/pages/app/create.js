@@ -48,7 +48,7 @@ const handleBriefURL = async () => {
     return;
   }
 
-  return initializeBrief(uuid);
+  await initializeBrief(uuid);
 };
 
 const initializeBrief = async (uuid) => {
@@ -65,18 +65,27 @@ const initializeBrief = async (uuid) => {
       throw new Error('Failed to load brief');
     }
 
-    const briefData = await response.json();
-    store.sync = briefData;
+    const data = await response.json();
+    console.log('initializeBrief data:', data);
+    
+    // Set brief data
+    store.sync = data.briefData;
+    
+    // Set profile data if it exists
+    if (data.profileData) {
+      store.syncSelectedProfile = data.profileData;
+      // Initialize content editable fields after setting profile data
+      initContentEditableFields();
+    }
+    
+    // Set ad data if it exists
+    if (data.adData) {
+      store.sourceAd = data.adData;
+    }
     
     // Initialize checkboxes after brief data is loaded
     initCheckboxStates();
     
-    // Fetch source script if we have an ad_id
-    if (briefData.ad_id) {
-      await store.fetchSourceScript();
-    }
-    
-    return briefData;
   } catch (error) {
     console.error('Error initializing brief:', error);
     toast.error('Error loading brief: ' + error.message);
@@ -149,6 +158,9 @@ const store = reactive({
     users_swipefeed: [],
     isLoadingSwipefeed: false
   },
+  sourceAd: {
+    script: [],
+  },
   //profile sync info
   syncSelectedProfile: {
     id: "",
@@ -172,10 +184,6 @@ const store = reactive({
     linkedin: "",
     asset_files: [],
     notes: ""
-  },
-  selectedInspiration: {
-    script: [],
-    loading: false
   },
   sync: {
     //main brief info
@@ -255,7 +263,7 @@ const store = reactive({
           console.error("Error saving brief:", error);
           toast.error("Failed to save brief");
         }
-      }, 2500);
+      }, 1725);
     });
   },
 
@@ -283,7 +291,7 @@ const store = reactive({
           console.error("Error saving profile:", error);
           toast.error("Failed to save profile");
         }
-      }, 2500);
+      }, 1725);
     });
   },
 
@@ -475,6 +483,51 @@ async function importFromUrl(url) {
 }
 
 
+// Initialize content editable fields for brand and product
+const initContentEditableFields = () => {
+  console.log('[DEBUG] Initializing content editable fields');
+  const inputs = document.querySelectorAll('.cc_contenteditable-input');
+  inputs.forEach(input => {
+    console.log('Setting up input:', input);
+    
+    // Set initial text length
+    const initialText = input.textContent;
+    const initialLength = initialText ? initialText.length + 1 : 1;
+    console.log('Initial text:', initialText, 'length:', initialLength);
+    input.style.setProperty('--text-length', initialLength);
+    
+    // Update text length and store on input
+    input.addEventListener('input', (e) => {
+      const newText = e.target.textContent;
+      const newLength = newText ? newText.length + 1 : 1;
+      console.log('Input changed. New text:', newText, 'new length:', newLength);
+      input.style.setProperty('--text-length', newLength);
+
+      // Update store based on input id or placeholder
+      if (store.syncSelectedProfile) {
+        if (e.target.placeholder === 'Brand Name' || e.target.dataset.name === 'Brand') {
+          console.log('Updating brand in store:', newText);
+          store.syncSelectedProfile.brand_name = newText;
+        } else if (e.target.placeholder === 'Product' || e.target.dataset.name === 'Product') {
+          console.log('Updating product in store:', newText);
+          store.syncSelectedProfile.product = newText;
+        }
+      }
+    });
+
+    // Set initial values from store if they exist
+    if (store.syncSelectedProfile) {
+      if ((input.placeholder === 'Brand Name' || input.dataset.name === 'Brand') && store.syncSelectedProfile.brand_name) {
+        input.textContent = store.syncSelectedProfile.brand_name;
+        input.style.setProperty('--text-length', store.syncSelectedProfile.brand_name.length + 1);
+      } else if ((input.placeholder === 'Product' || input.dataset.name === 'Product') && store.syncSelectedProfile.product) {
+        input.textContent = store.syncSelectedProfile.product;
+        input.style.setProperty('--text-length', store.syncSelectedProfile.product.length + 1);
+      }
+    }
+  });
+};
+
 //load or new profile
 async function handleProfile(action, profileId) {
   console.log('[DEBUG] Starting handleProfile with action:', action, 'profileId:', profileId);
@@ -503,6 +556,9 @@ async function handleProfile(action, profileId) {
       console.log('[DEBUG] Success response:', data);
       store.syncSelectedProfile = data;
       store.sync.profile_id = data.id;
+      
+      // Initialize content editable fields after setting store data
+      initContentEditableFields();
       
       // Refresh the profiles list
       await store.fetchUserProfiles();
@@ -534,44 +590,24 @@ async function handleProfile(action, profileId) {
       console.log('[DEBUG] Success response:', data);
       store.syncSelectedProfile = data;
       store.sync.profile_id = data.id;
+      
+      // Initialize content editable fields after setting store data
+      initContentEditableFields();
+
+      if (typeof Webflow !== 'undefined' && Webflow.require('ix2')) {
+        Webflow.require('ix2').init();
+        console.log('[DEBUG] Webflow and IX2 loaded');
+      }
+
+      // Initialize checkboxes after the profile data is loaded
+      initCheckboxStates();
+
     } catch (error) {
       console.error('[DEBUG] Error in handleProfile:', error);
       toast.error('Error loading profile: ' + error.message);
       throw error;
     }
   }
-  
-
-  // Content editable inputs
-  const inputs = document.querySelectorAll('.cc_contenteditable-input');
-  inputs.forEach(input => {
-    console.log('Setting up input:', input);
-    
-    // Set initial text length
-    const initialText = input.textContent;
-    const initialLength = initialText ? initialText.length + 1 : 1;
-    console.log('Initial text:', initialText, 'length:', initialLength);
-    input.style.setProperty('--text-length', initialLength);
-    
-    // Update text length and store on input
-    input.addEventListener('input', (e) => {
-      const newText = e.target.textContent;
-      const newLength = newText ? newText.length + 1 : 1;
-      console.log('Input changed. New text:', newText, 'new length:', newLength);
-      input.style.setProperty('--text-length', newLength);
-
-      // Update store based on input id or placeholder
-      if (this.store.syncSelectedProfile) {
-        if (e.target.placeholder === 'Brand Name' || e.target.dataset.name === 'Brand') {
-          console.log('Updating brand in store:', newText);
-          this.store.syncSelectedProfile.brand_name = newText;
-        } else if (e.target.placeholder === 'Product' || e.target.dataset.name === 'Product') {
-          console.log('Updating product in store:', newText);
-          this.store.syncSelectedProfile.product = newText;
-        }
-      }
-    });
-  });
 }
 
 /*--reactivity functions----------------------------------------------------------*/
@@ -632,17 +668,17 @@ const syncGenerateToVisibility = (type, value) => {
 };
 
 const updateGenerateScript = (value) => {
-  store.sync.helpers.toggle_generate_script = value;
+  store.syncSelectedProfile.helpers.toggle_generate_script = value;
   syncGenerateToVisibility('script', value);
 };
 
 const updateGenerateAction = (value) => {
-  store.sync.helpers.toggle_generate_action_description = value;
+  store.syncSelectedProfile.helpers.toggle_generate_action_description = value;
   syncGenerateToVisibility('action', value);
 };
 
 const updateGenerateText = (value) => {
-  store.sync.helpers.toggle_generate_text_on_screen = value;
+  store.syncSelectedProfile.helpers.toggle_generate_text_on_screen = value;
   syncGenerateToVisibility('text', value);
 };
 
@@ -728,9 +764,13 @@ const initCheckboxStates = () => {
         {
             selector: 'toggle_generate_text_on_screen',
             value: () => store.syncSelectedProfile.helpers.toggle_generate_text_on_screen
+        },
+        {
+            selector: 'toggle_custom_prompt',
+            value: () => store.syncSelectedProfile.helpers.toggle_custom_prompt
         }
     ];
-
+setTimeout(() => {
     // Single loop to handle all checkbox types
     checkboxMappings.forEach(mapping => {
         document.querySelectorAll(`input[type="checkbox"][cc_data="${mapping.selector}"]`)
@@ -742,6 +782,7 @@ const initCheckboxStates = () => {
                 }
             });
     });
+}, 25);
 };
 
 quillCustomPrompt.on(
