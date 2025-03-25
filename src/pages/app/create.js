@@ -128,15 +128,15 @@ const store = reactive({
     
     console.log('Creating gauge with:', {
       score: Number(score),
-      avgScore: store.sync?.copilot?.avgScore || 75,
-      topScore: store.sync?.copilot?.topScore || 79
+      avgScore: store.sync?.copilot?.avgScore || 0,
+      topScore: store.sync?.copilot?.topScore || 0
     });
     
     await createGaugeChart(
       gaugeElement,
       Number(score),
-      store.sync?.copilot?.avgScore || 75,
-      store.sync?.copilot?.topScore || 79
+      store.sync?.copilot?.avgScore || 0,
+      store.sync?.copilot?.topScore || 0
     );
   },
   //for copilot reactivity on gauge.
@@ -436,6 +436,25 @@ const store = reactive({
       this.selectedInspiration.loading = false;
     }
   },
+  languages: [
+    'English', 'Albanian', 'Amharic', 'Arabic', 'Armenian', 'Aymara', 'Azerbaijani',
+    'Bambara', 'Belarusian', 'Bengali', 'Bosnian', 'Bulgarian', 'Burmese', 'Catalan',
+    'Chewa', 'Chinese (Cantonese)', 'Chinese (Mandarin)', 'Croatian', 'Czech', 'Danish',
+    'Dari', 'Dutch', 'Dzongkha', 'Estonian', 'Fijian', 'Filipino', 'Finnish', 'French',
+    'Fulani', 'Georgian', 'German', 'Greek', 'Gujarati', 'Guaraní', 'Haitian Creole',
+    'Hausa', 'Hebrew', 'Hindi', 'Hungarian', 'Icelandic', 'Igbo', 'Indonesian', 'Irish',
+    'Italian', 'Japanese', 'Kannada', 'Kazakh', 'Khmer', 'Kinyarwanda', 'Korean',
+    'Kurdish', 'Kyrgyz', 'Lao', 'Latvian', 'Lingala', 'Lithuanian', 'Macedonian',
+    'Malay', 'Malayalam', 'Maltese', 'Maori', 'Marathi', 'Marshallese', 'Moldovan',
+    'Mongolian', 'Montenegrin', 'Nepali', 'Norwegian', 'Oromo', 'Pashto', 'Persian',
+    'Polish', 'Portuguese', 'Punjabi', 'Quechua', 'Romanian', 'Russian', 'Samoan',
+    'Serbian', 'Shona', 'Sinhala', 'Slovak', 'Slovene', 'Somali', 'Spanish', 'Swahili',
+    'Swedish', 'Tamil', 'Telugu', 'Thai', 'Tswana', 'Turkish', 'Turkmen', 'Tuvaluan',
+    'Ukrainian', 'Urdu', 'Uzbek', 'Vietnamese', 'Xhosa', 'Yoruba', 'Zulu'
+  ],
+  selectLanguage(language) {
+    this.syncSelectedProfile.helpers.toggle_script_language = language;
+  }
 });
 
 //end store
