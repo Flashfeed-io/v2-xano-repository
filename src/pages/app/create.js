@@ -77,6 +77,9 @@ const initializeBrief = async (uuid) => {
       store.syncSelectedProfile = data.profileData;
       // Initialize content editable fields after setting profile data
       initContentEditableFields();
+      if (data.profileData.custom_prompt) {
+        quillCustomPrompt.root.innerHTML = data.profileData.custom_prompt;
+      }
     }
     
     // Set ad data if it exists
@@ -190,8 +193,8 @@ const store = reactive({
     brand_name: "Brand",
     product: "",
     import_link: "",
-    summary: "asdfasd",
-    customPrompt: "",
+    summary: "",
+    custom_prompt: "",
     helpers: {
       toggle_custom_prompt: false,
       toggle_generate_script: true,
@@ -489,7 +492,7 @@ const store = reactive({
   setLowRadarValues() {
     // Create a sample copilot data object with the desired sample values.
     const sampleCopilotData = {
-      score: 1,
+      score: 100,
       avgScore: 1,
       topScore: 1,
       virality: 1,
@@ -497,7 +500,7 @@ const store = reactive({
         { category: 'Laughter', value: 1 },
         { category: 'Shock', value: 1 },
         { category: 'Amazement', value: 1 },
-        { category: 'Sentimental', value: 1 },
+        { category: 'Sentiment', value: 1 },
         { category: 'Agitation', value: 1 },
         { category: 'Intrigue', value: 1 }
       ],
@@ -887,36 +890,46 @@ setTimeout(() => {
     });
 }, 25);
 };
-
 quillCustomPrompt.on(
   "text-change",
   function (delta, oldDelta, source) {
-    store.syncSelectedProfile.customPrompt =
+    store.syncSelectedProfile.custom_prompt =
       quillCustomPrompt.container.children[0].innerHTML;
 
     console.log(
       "Checking -> : inside textchange of brandserviceorproduct quill",
       quillCustomPrompt.container.children[0].innerHTML
     );
-    // Assuming you want to count text length, not HTML length:
-    const textLength = quillCustomPrompt.getText().trim().length; // trim() to remove trailing spaces/newlines
+    
+    // Count the text length, ignoring HTML tags
+    const textLength = quillCustomPrompt.getText().trim().length;
 
     // Calculate width based on text length (customize this logic as needed)
-    let widthPercentage = Math.min(100, (textLength / 250) * 100); // Caps at 100%
+    let widthPercentage = Math.min(100, (textLength / 150) * 100); // Caps at 100%
 
     // Determine color based on text length
-    let color = textLength > 250 ? "#2cc32c" : "#f56780"; // Uses hex codes for green and red
+    let color;
+    if (textLength <= 75) {
+      color = "#f25455"; // Red
+    } else if (textLength > 75 && textLength <= 150) {
+      color = "#fe8f57"; // Orange
+    } else {
+      color = "#30c454"; // Green
+    }
 
+    // Update the length bar element
     const lengthBar = document.querySelector(
-      '[cc_data="brandInformationLengthBar"]'
+      '[cc_data="barCustomPrompt"]'
     );
     if (lengthBar) {
       lengthBar.style.width = widthPercentage + "%";
       lengthBar.style.backgroundColor = color;
     }
-    handleWriterValidation();
   }
 );
+
+
+
 
 console.log(
   "Checking -> : quill editor of brandserviceorproduct",
