@@ -13,6 +13,7 @@ import { initCleave } from "/src/utils/cleave.js";
 import { loadD3 } from "/src/utils/importedD3.js";
 import { initRadarCharts } from "/src/utils/initRadarCharts.js";
 import { createGaugeChart } from "/src/utils/copilot-gauge.js";
+import { initCustomDropdown } from "/src/utils/customDropdown.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -44,7 +45,7 @@ const handleBriefURL = async () => {
   
   if (!uuid) {
     console.error('No UUID provided in URL');
-    toast.error('Invalid brief URL');
+    toast.error('No UUID provided in URL');
     return;
   }
 
@@ -85,6 +86,27 @@ const initializeBrief = async (uuid) => {
     
     // Initialize checkboxes after brief data is loaded
     initCheckboxStates();
+
+    // Ensure gauge and radar charts update after data is loaded
+    if (data.briefData?.copilot) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        // Update gauge
+        store.dataToSync.copilot = data.briefData.copilot;
+        
+        // Update radar charts
+        if (data.briefData.copilot.virality_radar && data.briefData.copilot.direct_response_radar) {
+          loadD3().then(() => {
+            initRadarCharts(
+              data.briefData.copilot.virality_radar,
+              data.briefData.copilot.direct_response_radar
+            );
+          }).catch(error => {
+            console.error('Failed to initialize radar charts:', error);
+          });
+        }
+      }, 100);
+    }
     
   } catch (error) {
     console.error('Error initializing brief:', error);
@@ -253,15 +275,21 @@ const store = reactive({
         console.log("Brief data changed:", briefData);
         
         try {
-          await fetch("https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/brief/edit", {
+          const response = await fetch("https://x6c9-ohwk-nih4.n7d.xano.io/api:9W6GA8Qw/brief/edit", {
             method: "PATCH",
             headers: getHeaders(this.token),
             body: JSON.stringify({ payload: JSON.parse(briefData) })
           });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `API Error: ${response.status}`);
+          }
+
           toast.success("Brief saved successfully");
         } catch (error) {
           console.error("Error saving brief:", error);
-          toast.error("Failed to save brief");
+          toast.error("Error. " + error.message);
         }
       }, 1725);
     });
@@ -286,6 +314,8 @@ const store = reactive({
             headers: getHeaders(this.token),
             body: JSON.stringify({ payload: JSON.parse(profileData) })
           });
+
+
           toast.success("Profile saved successfully");
         } catch (error) {
           console.error("Error saving profile:", error);
@@ -454,10 +484,54 @@ const store = reactive({
   ],
   selectLanguage(language) {
     this.syncSelectedProfile.helpers.toggle_script_language = language;
+  },
+  // Method to set all radar values to 1 or 2
+  setLowRadarValues() {
+    // Create a sample copilot data object with the desired sample values.
+    const sampleCopilotData = {
+      score: 1,
+      avgScore: 1,
+      topScore: 1,
+      virality: 1,
+      virality_radar: [
+        { category: 'Laughter', value: 1 },
+        { category: 'Shock', value: 1 },
+        { category: 'Amazement', value: 1 },
+        { category: 'Sentimental', value: 1 },
+        { category: 'Agitation', value: 1 },
+        { category: 'Intrigue', value: 1 }
+      ],
+      direct_response: 2,
+      direct_response_radar: [
+        { category: 'Urgency', value: 2 },
+        { category: 'Trust', value: 2 },
+        { category: 'Clarity', value: 2 },
+        { category: 'Desire', value: 2 },
+        { category: 'Value', value: 2 },
+        { category: 'Relevance', value: 2 }
+      ],
+      suggestions: []
+    };
+  
+    // Update both reactive properties to ensure consistency.
+    this.sync.copilot = sampleCopilotData;
+    this.dataToSync.copilot = sampleCopilotData;
+  
+    // Update gauge and radar charts after a short delay.
+    setTimeout(() => {
+      // Reinitialize radar charts with the new sample values.
+      initRadarCharts(
+        this.sync.copilot.virality_radar,
+        this.sync.copilot.direct_response_radar
+      );
+      // Update the gauge chart.
+      this.updateGauge();
+    }, 100);
   }
+  
 });
 
-//end store
+//end store 🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧
 
 /*--main code----------------------------------------------------------*/
 //import from url
@@ -657,7 +731,7 @@ const addScriptSection = () => {
   }
   
   store.sync.script.push({
-    copilot: "green",                 // Copilot-generated color
+    copilot: "",                 // Copilot-generated color
     title: getDefaultTitle(),         // Hook for first, Body for rest
     startTime: calculateStartTime(), // Auto-calculated from previous section
     duration: 3.0,               // Default duration in seconds
@@ -667,7 +741,16 @@ const addScriptSection = () => {
     viralityRatings: [],         // Array to store virality ratings
     directResponseRatings: []    // Array to store direct response ratings
   });
+  
+  initCustomDropdown();
+
 };
+
+const deleteScriptSection = (index) => {
+  if (Array.isArray(store.sync.script) && index >= 0 && index < store.sync.script.length) {
+    store.sync.script.splice(index, 1);
+  }
+}; 
 
 const syncGenerateToVisibility = (type, value) => {
   // If setting generate to true, also set visibility to true
@@ -746,8 +829,9 @@ document.querySelectorAll('[cc_data="add-product"]').forEach((button) => {
   });
 });
 
-const removeAssetFile = (index) => {
-    store.syncSelectedProfile.asset_files.splice(index, 1);
+const deleteAssetFile = (index) => {
+  console.log('[DEBUG] Deleting asset file at index:', index);
+  store.syncSelectedProfile.asset_files.splice(index, 1);
 };
 
 const initCheckboxStates = () => {
@@ -986,8 +1070,7 @@ const app = createApp({
   },
   mounted() {
     // Initialize both watchers
-    store.watchBrief();
-    store.watchProfile();
+    initCustomDropdown();
     
     console.log('Mounting component...');
     
@@ -1084,8 +1167,9 @@ const app = createApp({
     });
   },
   addAssetFile,
-  removeAssetFile,
+  deleteAssetFile,
   addScriptSection,
+  deleteScriptSection,
   updateGenerateScript,
   updateGenerateAction,
   updateGenerateText,
