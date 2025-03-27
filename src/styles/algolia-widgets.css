@@ -160,8 +160,18 @@
 
 .webflow-search-reset {
   position: absolute;
-  right: 16px;
+  right: 0px;
   top: -5px;
+}
+
+.ais-SearchBox-reset {
+  position: absolute!important;
+  right: 22px;
+}
+
+.ais-RefinementList-searchBox.ais-SearchBox-reset {
+  position: absolute!important;
+  right: 16px;
 }
 
 .ais-SearchBox-form:before {
@@ -184,6 +194,7 @@
 
 .ais-RefinementList-searchBox .ais-SearchBox-input {
   height: var(--button-pill-height-ai);
+  padding-left: 36px;
 }
 
 .ais-SearchBox {
@@ -233,8 +244,7 @@
 
 .ais-SearchBox-submit {
   position: absolute;
-  left: 100%;
-  margin-left: -42px;
+  margin-left: 14px;
 }
 
 .ais-SearchBox-submitIcon {
@@ -249,9 +259,16 @@
   border-color: white;
 }
 
-.ais-SearchBox-reset{
-  position: relative;
+.ais-RefinementList-noResults {
+  padding: 16px;
+  display: flex;
+  flex-flow: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-family: Circularstd book, sans-serif;
 }
+
 
 /* || Powered by algolia component */
 

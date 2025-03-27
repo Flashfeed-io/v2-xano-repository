@@ -441,7 +441,7 @@ window.addEventListener("DOMContentLoaded", () => {
   injectStyles();
 
   // Check if required containers exist
-  const requiredContainers = ['#genre-list', '#clear-refinements', '#searchbox', '#hits', '#poweredBy'];
+  const requiredContainers = ['#clear-refinements', '#searchbox', '#hits', '#poweredBy', '#refinement-industry'];
   const missingContainers = requiredContainers.filter(selector => !document.querySelector(selector));
   if (missingContainers.length > 0) {
     console.error('[DEBUG] Missing containers:', missingContainers);
@@ -523,11 +523,55 @@ window.addEventListener("DOMContentLoaded", () => {
                 }, 10);
               "
             />
-            <span class="form-checkbox-label w-form-label">{{label}} ({{count}})</span>
+            <span class="form-checkbox-label w-form-label text-capitalize-first">{{label}}</span>
           </label>
         `,
         noResults: 'No genres found.',
         noRefinementRoot: 'No genres available.'
+      }
+    }),
+    // Industry component
+    instantsearch.widgets.refinementList({
+      container: "#refinement-industry",
+      attribute: "industry",
+      cssClasses: {
+        root: "ad-library_filter-max-height",
+      },
+      transformItems(items) {
+        console.log('[DEBUG] Industry refinement items:', items);
+        return items;
+      },
+      searchable: true,
+      operator: 'or',
+      limit: 10,
+      // use ({{count}}) to show count of items
+      templates: {
+        item: `
+          <label class="w-checkbox form-checkbox">
+            <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
+            <input type="checkbox" 
+              style="opacity:0;position:absolute;z-index:-1" 
+              value="{{label}}" 
+              {{#isRefined}}checked{{/isRefined}}
+              onclick="
+                const originalEvent = event;
+                event.stopPropagation();
+                setTimeout(() => {
+                  // Create and dispatch a new click event after Algolia processes
+                  const newEvent = new MouseEvent('click', {
+                    bubbles: false,
+                    cancelable: true,
+                    view: window
+                  });
+                  originalEvent.target.dispatchEvent(newEvent);
+                }, 10);
+              "
+            />
+            <span class="form-checkbox-label w-form-label text-capitalize-first">{{label}}</span>
+          </label>
+        `,
+        noResults: 'No industries found.',
+        noRefinementRoot: 'No industries available.'
       }
     }),
     // Search component
