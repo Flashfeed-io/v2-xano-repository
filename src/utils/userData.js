@@ -50,18 +50,29 @@ export const verifyAuth = async (store) => {
     });
 
     if (!response.ok) {
-      // If response is 401 or 403, token is invalid or expired
-      if (response.status === 401 || response.status === 403) {
-        console.log("[DEBUG] Token expired or invalid");
-        // Clear invalid token
-        document.cookie = 'ff_auth=; Max-Age=0';
-        store.token = '';
-        alert('Your session has expired or is invalid. Please log in again.');
-        return false;
-      }
-
       const errorData = await response.json().catch(() => null);
       console.error("[DEBUG] Error response data:", errorData);
+      
+      // Call logout endpoint and clean up auth data on 401 Unauthorized (expired session)
+      if (response.status === 401) {
+        // Call logout endpoint first
+        try {
+          const logoutResponse = await fetch('https://x6c9-ohwk-nih4.n7d.xano.io/api:Y296zGem/auth/logout', {
+            method: "POST",
+            headers: getHeaders(token)
+          });
+          if (!logoutResponse.ok) {
+            console.error("Logout endpoint returned error:", logoutResponse.status);
+          }
+        } catch (e) {
+          console.error("Error calling logout endpoint:", e);
+        }
+        // Then clear client-side auth data
+        document.cookie = 'ff_auth=; Max-Age=0';
+        store.token = '';
+        window.location.href = "/login";
+        return false;
+      }
       
       throw new Error(
         errorData?.message || 

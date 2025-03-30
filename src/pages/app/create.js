@@ -736,7 +736,7 @@ const addScriptSection = () => {
   store.sync.script.push({
     copilot: "",                 // Copilot-generated color
     title: getDefaultTitle(),         // Hook for first, Body for rest
-    startTime: calculateStartTime(), // Auto-calculated from previous section
+    start_time: calculateStartTime(), // Auto-calculated from previous section
     duration: 3.0,               // Default duration in seconds
     script: "",                   // Script/dialogue content
     action_description: "",        // Visual description and actions
