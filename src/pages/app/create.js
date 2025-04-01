@@ -530,8 +530,50 @@ const store = reactive({
       // Update the gauge chart.
       this.updateGauge();
     }, 100);
-  }
-  
+  },
+  timeEditing: {
+    sectionIndex: null,
+    isEndTime: false
+  },
+  formatTimeMMSS: (timeInSeconds) => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  },
+  formatTimeRange: (startTime, endTime) => {
+    return `${store.formatTimeMMSS(startTime)} - ${store.formatTimeMMSS(endTime)}`;
+  },
+  getDuration: (section) => {
+    return section.end_time - section.start_time;
+  },
+  startTimeEdit: (index) => {
+    store.timeEditing.sectionIndex = index;
+  },
+  saveTimeEdit: (index, newDurationStr) => {
+    const durationInSeconds = parseInt(newDurationStr, 10);
+    if (isNaN(durationInSeconds) || durationInSeconds <= 0) return false;
+
+    const section = store.sync.script[index];
+    const oldEndTime = section.end_time;
+    const newEndTime = section.start_time + durationInSeconds;
+    const timeDiff = newEndTime - oldEndTime;
+
+    // Update this section's end time
+    section.end_time = newEndTime;
+
+    // Update all subsequent sections
+    for (let i = index + 1; i < store.sync.script.length; i++) {
+      store.sync.script[i].start_time += timeDiff;
+      store.sync.script[i].end_time += timeDiff;
+    }
+
+    // Clear editing state
+    store.timeEditing.sectionIndex = null;
+    return true;
+  },
+  cancelTimeEdit: () => {
+    store.timeEditing.sectionIndex = null;
+  },
 });
 
 //end store 
@@ -766,7 +808,7 @@ const addScriptSection = (position = -1) => {
     copilot: "",                 // Stores the copilot-generated color/theme
     title: getDefaultTitle(position),  // "Hook" or "Body" based on position
     start_time: start_time,           // When this section begins
-    end_time: start_time + 3.0,       // When this section ends (3 second default duration)
+    end_time: start_time + 5.0,       // When this section ends (5 second default duration)
     script: "",                       // The actual script text
     action_description: "",           // Description of what's happening visually
     text_on_screen: "",              // Any text overlays to show
@@ -1246,7 +1288,23 @@ const app = createApp({
   getBackgroundStyle,
   setProductVisible,
   handleBriefURL,
-  initializeBrief
+  initializeBrief,
+  formatTimeMMSS: store.formatTimeMMSS,
+  formatTimeRange: store.formatTimeRange,
+  startTimeEdit: store.startTimeEdit,
+  saveTimeEdit: store.saveTimeEdit,
+  cancelTimeEdit: store.cancelTimeEdit,
+  importFromUrl,
+  handleProfile,
+  getBackgroundStyle,
+  setProductVisible,
+  handleBriefURL,
+  initializeBrief,
+  formatTimeMMSS: store.formatTimeMMSS,
+  formatTimeRange: store.formatTimeRange,
+  startTimeEdit: store.startTimeEdit,
+  saveTimeEdit: store.saveTimeEdit,
+  cancelTimeEdit: store.cancelTimeEdit
 });
 
 export { app };
