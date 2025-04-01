@@ -534,7 +534,7 @@ const store = reactive({
   
 });
 
-//end store 🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧🏧
+//end store 
 
 /*--main code----------------------------------------------------------*/
 //import from url
@@ -718,40 +718,95 @@ const getBackgroundStyle = (url) => {
 };
 
 //script
-const calculateStartTime = () => {
+const calculateStartTime = (index = -1) => {
+  // If there's no script array or it's empty, this must be the first section, so start at 0
   if (!store.sync.script || store.sync.script.length === 0) return 0;
-  const lastSection = store.sync.script[store.sync.script.length - 1];
-  return lastSection.startTime + lastSection.duration;
+
+  // Case 1: Adding to the end of the list (index = -1) OR
+  // Case 2: Invalid index that's too large
+  // In both cases, we want to start this section where the last section ends
+  if (index < 0 || index >= store.sync.script.length) {
+    const lastSection = store.sync.script[store.sync.script.length - 1];
+    return lastSection.end_time;
+  }
+
+  // Case 3: Adding at the very beginning (index = 0)
+  // Start at 0 since this will become the first section
+  if (index === 0) return 0;
+
+  // Case 4: Adding somewhere in the middle
+  // Start this section exactly where the previous section ends
+  const previousSection = store.sync.script[index - 1];
+  return previousSection.end_time;
 };
 
-const getDefaultTitle = () => {
-  return (!store.sync.script || store.sync.script.length === 0) ? "Hook" : "Body";
+const getDefaultTitle = (index = -1) => {
+  // The first section (either when list is empty or explicitly adding at index 0)
+  // should be titled "Hook". All other sections are "Body"
+  if (!store.sync.script || store.sync.script.length === 0 || index === 0) return "Hook";
+  return "Body";
 };
 
-const addScriptSection = () => {
-  if (!Array.isArray(store.sync.script) || store.sync.script.length === 0) {
-      store.sync.script = [];
+const addScriptSection = (position = -1) => {
+  // Initialize script array if it doesn't exist
+  // This ensures we always have a valid array to work with
+  if (!Array.isArray(store.sync.script)) {
+    store.sync.script = [];
   }
   
-  store.sync.script.push({
-    copilot: "",                 // Copilot-generated color
-    title: getDefaultTitle(),         // Hook for first, Body for rest
-    start_time: calculateStartTime(), // Auto-calculated from previous section
-    duration: 3.0,               // Default duration in seconds
-    script: "",                   // Script/dialogue content
-    action_description: "",        // Visual description and actions
-    textOnScreen: "",            // Any text overlays or captions
-    viralityRatings: [],         // Array to store virality ratings
-    directResponseRatings: []    // Array to store direct response ratings
-  });
-  
-  initCustomDropdown();
+  // Calculate where this section should start based on its position
+  // This uses the calculateStartTime logic above to handle all cases
+  const start_time = calculateStartTime(position);
 
+  // Create the new section object with all required fields
+  // start_time is calculated above
+  // end_time is always 3 seconds after start_time
+  // All other fields start empty/default
+  const newSection = {
+    copilot: "",                 // Stores the copilot-generated color/theme
+    title: getDefaultTitle(position),  // "Hook" or "Body" based on position
+    start_time: start_time,           // When this section begins
+    end_time: start_time + 3.0,       // When this section ends (3 second default duration)
+    script: "",                       // The actual script text
+    action_description: "",           // Description of what's happening visually
+    text_on_screen: "",              // Any text overlays to show
+    virality_ratings: [],            // Ratings for virality metrics
+    direct_response_ratings: []       // Ratings for direct response metrics
+  };
+
+  // If position is valid (0 or greater) AND not beyond end of array
+  // This means we're inserting somewhere in the existing list
+  if (position >= 0 && position < store.sync.script.length) {
+    // splice: Insert newSection at position, pushing existing sections forward
+    store.sync.script.splice(position, 0, newSection);
+
+    // After inserting a new section, we need to update ALL following sections
+    // because their start/end times have been pushed forward
+    for (let i = position + 1; i < store.sync.script.length; i++) {
+      // Each section starts exactly when the previous section ends
+      store.sync.script[i].start_time = store.sync.script[i - 1].end_time;
+      // Each section is exactly 3 seconds long
+      store.sync.script[i].end_time = store.sync.script[i].start_time + 3.0;
+    }
+  } else {
+    // If position was -1 or beyond array length
+    // Simply add the new section at the end
+    // No need to update other sections since we're just appending
+    store.sync.script.push(newSection);
+  }
+  
+  // Reinitialize any custom dropdowns that might be affected by this change
+  initCustomDropdown();
 };
 
 const deleteScriptSection = (index) => {
   if (Array.isArray(store.sync.script) && index >= 0 && index < store.sync.script.length) {
     store.sync.script.splice(index, 1);
+    // Recalculate times for all subsequent sections
+    for (let i = index; i < store.sync.script.length; i++) {
+      store.sync.script[i].start_time = i === 0 ? 0 : store.sync.script[i - 1].end_time;
+      store.sync.script[i].end_time = store.sync.script[i].start_time + 3.0; // Maintain 3 second duration
+    }
   }
 }; 
 
