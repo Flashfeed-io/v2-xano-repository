@@ -198,7 +198,7 @@ const store = reactive({
     helpers: {
       toggle_custom_prompt: false,
       toggle_generate_script: true,
-      toggle_generate_action_description: true,
+      toggle_generate_visual_description: true,
       toggle_generate_text_on_screen: false,
       toggle_script_language: "English",
     },
@@ -253,7 +253,7 @@ const store = reactive({
     helpers: {
       toggle_visibility_source_script: true,
       toggle_visibility_script: true,
-      toggle_visibility_action_description: true,
+      toggle_visibility_visual_description: true,
       toggle_visibility_text_on_screen: false,
       toggle_visibility_seconds: true,
     }
@@ -548,6 +548,13 @@ const store = reactive({
   },
   startTimeEdit: (index) => {
     store.timeEditing.sectionIndex = index;
+    // Use setTimeout to ensure the input exists in DOM
+    setTimeout(() => {
+      const input = document.querySelector(`[data-duration-input="${index}"]`);
+      if (input) {
+        input.focus();
+      }
+    }, 0);
   },
   saveTimeEdit: (index, newDurationStr) => {
     const durationInSeconds = parseInt(newDurationStr, 10);
@@ -573,6 +580,16 @@ const store = reactive({
   },
   cancelTimeEdit: () => {
     store.timeEditing.sectionIndex = null;
+  },
+  handleTimeKeyup: (event, index) => {
+    // Handle Enter key
+    if (event.key === 'Enter') {
+      store.saveTimeEdit(index, event.target.value);
+    }
+    // Handle Escape key
+    else if (event.key === 'Escape') {
+      store.cancelTimeEdit();
+    }
   },
 });
 
@@ -791,63 +808,58 @@ const getDefaultTitle = (index = -1) => {
 
 const addScriptSection = (position = -1) => {
   // Initialize script array if it doesn't exist
-  // This ensures we always have a valid array to work with
   if (!Array.isArray(store.sync.script)) {
     store.sync.script = [];
   }
   
   // Calculate where this section should start based on its position
-  // This uses the calculateStartTime logic above to handle all cases
   const start_time = calculateStartTime(position);
 
-  // Create the new section object with all required fields
-  // start_time is calculated above
-  // end_time is always 3 seconds after start_time
-  // All other fields start empty/default
+  // Create the new section with default 5 second duration
   const newSection = {
-    copilot: "",                 // Stores the copilot-generated color/theme
-    title: getDefaultTitle(position),  // "Hook" or "Body" based on position
-    start_time: start_time,           // When this section begins
-    end_time: start_time + 5.0,       // When this section ends (5 second default duration)
-    script: "",                       // The actual script text
-    action_description: "",           // Description of what's happening visually
-    text_on_screen: "",              // Any text overlays to show
-    virality_ratings: [],            // Ratings for virality metrics
-    direct_response_ratings: []       // Ratings for direct response metrics
+    copilot: "",
+    title: getDefaultTitle(position),
+    start_time: start_time,
+    end_time: start_time + 5.0,
+    script: "",
+    visual_description: "",
+    text_on_screen: "",
+    virality_ratings: [],
+    direct_response_ratings: []
   };
 
-  // If position is valid (0 or greater) AND not beyond end of array
-  // This means we're inserting somewhere in the existing list
+  // If inserting into existing list
   if (position >= 0 && position < store.sync.script.length) {
-    // splice: Insert newSection at position, pushing existing sections forward
     store.sync.script.splice(position, 0, newSection);
 
-    // After inserting a new section, we need to update ALL following sections
-    // because their start/end times have been pushed forward
+    // Update all following sections while preserving their durations
     for (let i = position + 1; i < store.sync.script.length; i++) {
-      // Each section starts exactly when the previous section ends
+      const duration = store.sync.script[i].end_time - store.sync.script[i].start_time;
       store.sync.script[i].start_time = store.sync.script[i - 1].end_time;
-      // Each section is exactly 3 seconds long
-      store.sync.script[i].end_time = store.sync.script[i].start_time + 3.0;
+      store.sync.script[i].end_time = store.sync.script[i].start_time + duration;
     }
   } else {
-    // If position was -1 or beyond array length
-    // Simply add the new section at the end
-    // No need to update other sections since we're just appending
     store.sync.script.push(newSection);
   }
   
-  // Reinitialize any custom dropdowns that might be affected by this change
   initCustomDropdown();
 };
 
 const deleteScriptSection = (index) => {
   if (Array.isArray(store.sync.script) && index >= 0 && index < store.sync.script.length) {
+    // Remove the section
     store.sync.script.splice(index, 1);
+    
     // Recalculate times for all subsequent sections
     for (let i = index; i < store.sync.script.length; i++) {
+      // Calculate the duration of this section before updating its start time
+      const duration = store.sync.script[i].end_time - store.sync.script[i].start_time;
+      
+      // Update start time based on previous section's end time or 0 if first section
       store.sync.script[i].start_time = i === 0 ? 0 : store.sync.script[i - 1].end_time;
-      store.sync.script[i].end_time = store.sync.script[i].start_time + 3.0; // Maintain 3 second duration
+      
+      // Set end time to maintain the original duration
+      store.sync.script[i].end_time = store.sync.script[i].start_time + duration;
     }
   }
 }; 
@@ -860,7 +872,7 @@ const syncGenerateToVisibility = (type, value) => {
         store.sync.helpers.toggle_visibility_script = true;
         break;
       case 'action':
-        store.sync.helpers.toggle_visibility_action_description = true;
+        store.sync.helpers.toggle_visibility_visual_description = true;
         break;
       case 'text':
         store.sync.helpers.toggle_visibility_text_on_screen = true;
@@ -875,7 +887,7 @@ const updateGenerateScript = (value) => {
 };
 
 const updateGenerateAction = (value) => {
-  store.syncSelectedProfile.helpers.toggle_generate_action_description = value;
+  store.syncSelectedProfile.helpers.toggle_generate_visual_description = value;
   syncGenerateToVisibility('action', value);
 };
 
@@ -944,8 +956,8 @@ const initCheckboxStates = () => {
             value: () => store.sync.helpers.toggle_visibility_script
         },
         {
-            selector: 'toggle_visibility_action_description',
-            value: () => store.sync.helpers.toggle_visibility_action_description
+            selector: 'toggle_visibility_visual_description',
+            value: () => store.sync.helpers.toggle_visibility_visual_description
         },
         {
             selector: 'toggle_visibility_text_on_screen',
@@ -961,8 +973,8 @@ const initCheckboxStates = () => {
             value: () => store.syncSelectedProfile.helpers.toggle_generate_script
         },
         {
-            selector: 'toggle_generate_action_description',
-            value: () => store.syncSelectedProfile.helpers.toggle_generate_action_description
+            selector: 'toggle_generate_visual_description',
+            value: () => store.syncSelectedProfile.helpers.toggle_generate_visual_description
         },
         {
             selector: 'toggle_generate_text_on_screen',
@@ -1304,7 +1316,8 @@ const app = createApp({
   formatTimeRange: store.formatTimeRange,
   startTimeEdit: store.startTimeEdit,
   saveTimeEdit: store.saveTimeEdit,
-  cancelTimeEdit: store.cancelTimeEdit
+  cancelTimeEdit: store.cancelTimeEdit,
+  handleTimeKeyup: store.handleTimeKeyup,
 });
 
 export { app };
