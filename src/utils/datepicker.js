@@ -58,9 +58,13 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     
     onChange: function(selectedDates, dateStr, instance) {
       console.log('📅 Date changed:', { selectedDates, dateStr });
-      // Update store if provided - convert to YYYY-MM-DD format
+      // Update store if provided - convert to YYYY-MM-DD format using local time
       if (store?.sync && selectedDates.length > 0) {
-        const isoDate = selectedDates[0].toISOString().split('T')[0];
+        const date = selectedDates[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const isoDate = `${year}-${month}-${day}`;
         console.log('Updating store with date:', isoDate);
         store.sync.due_date = isoDate;
       }

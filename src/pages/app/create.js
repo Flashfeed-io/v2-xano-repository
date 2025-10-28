@@ -670,14 +670,41 @@ const initContentEditableFields = () => {
     console.log('Initial text:', initialText, 'length:', initialLength);
     input.style.setProperty('--text-length', initialLength);
     
-    // Update text length and store on input
+    // Prevent Enter key from creating new lines
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        console.log('Enter key blocked on contenteditable input');
+      }
+    });
+    
+    // Update text length on input (visual feedback only)
     input.addEventListener('input', (e) => {
       const newText = e.target.textContent;
       const newLength = newText ? newText.length + 1 : 1;
       console.log('Input changed. New text:', newText, 'new length:', newLength);
       input.style.setProperty('--text-length', newLength);
-
-      // Update store based on input id or placeholder
+      
+      // If field becomes empty, update store immediately to trigger v-show
+      if (!newText || newText.trim() === '') {
+        if (store.syncSelectedProfile) {
+          if (e.target.placeholder === 'Brand Name' || e.target.dataset.name === 'Brand') {
+            console.log('Field empty, clearing brand in store');
+            store.syncSelectedProfile.brand_name = '';
+          } else if (e.target.placeholder === 'Product' || e.target.dataset.name === 'Product') {
+            console.log('Field empty, clearing product in store');
+            store.syncSelectedProfile.product = '';
+          }
+        }
+      }
+    });
+    
+    // Update store only on blur (when user is done editing)
+    // This prevents reactive updates from interfering with cursor position during typing
+    input.addEventListener('blur', (e) => {
+      const newText = e.target.textContent;
+      console.log('Input blur. Saving to store:', newText);
+      
       if (store.syncSelectedProfile) {
         if (e.target.placeholder === 'Brand Name' || e.target.dataset.name === 'Brand') {
           console.log('Updating brand in store:', newText);
