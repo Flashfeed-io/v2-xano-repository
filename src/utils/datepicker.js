@@ -31,17 +31,16 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
 
   const defaultOptions = {
     // Basic Settings
-    dateFormat: "Y-m-d",
+    dateFormat: "F j, Y",
     defaultDate: today,
-    altInput: true,
-    altFormat: "F j, Y",
+    altInput: false,
     animate: true,
     
     // UX Enhancements
-    allowInput: true,
+    allowInput: false,
     clickOpens: true,
     closeOnSelect: true,
-    static: true,
+    static: false,
     
     // Visual Settings
     showMonths: 1,
@@ -49,6 +48,7 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     minDate: today,
     maxDate: maxDateStr,
     monthSelectorType: "static",
+    disableMobile: true,
     
     // Callbacks
     onOpen: function(selectedDates, dateStr, instance) {
@@ -58,10 +58,11 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
     
     onChange: function(selectedDates, dateStr, instance) {
       console.log('📅 Date changed:', { selectedDates, dateStr });
-      // Update store if provided
-      if (store?.sync) {
-        console.log('Updating store with date:', dateStr);
-        store.sync.due_date = dateStr;
+      // Update store if provided - convert to YYYY-MM-DD format
+      if (store?.sync && selectedDates.length > 0) {
+        const isoDate = selectedDates[0].toISOString().split('T')[0];
+        console.log('Updating store with date:', isoDate);
+        store.sync.due_date = isoDate;
       }
       console.log('Triggering change event');
       // Trigger change event for Webflow compatibility
@@ -71,6 +72,10 @@ export function initDatepicker(selector = '[cc_data-datepicker="true"]', customO
 
     onReady: function(selectedDates, dateStr, instance) {
       console.log('✨ Datepicker ready on element:', instance.element);
+      // Update the element's text content with formatted date
+      if (selectedDates.length > 0) {
+        instance.element.textContent = dateStr;
+      }
     },
 
     onClose: function(selectedDates, dateStr, instance) {
