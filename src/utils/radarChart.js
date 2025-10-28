@@ -23,8 +23,8 @@ export function createRadarChart(element, data, options = {}) {
             [24, 0, 0, 0],    // Top (Laughter)
             [0, 14, 0, 0],    // Top right (Shock)
             [0, 14, 0, 0],    // Bottom right (Amazement)
-            [0, 0, 0, 0],    // Bottom (Sentimental)
-            [0, 0, 0, 14],    // Bottom left (Agitation)
+            [0, 0, 0, 0],    // Bottom (Sentiment)
+            [0, 0, 0, 14],    // Bottom left (Pull)
             [0, 0, 0, 14]     // Top left (Intrigue)
         ]
     } = options;

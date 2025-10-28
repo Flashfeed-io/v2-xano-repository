@@ -14,6 +14,7 @@ import { loadD3 } from "/src/utils/importedD3.js";
 import { initRadarCharts } from "/src/utils/initRadarCharts.js";
 import { createGaugeChart } from "/src/utils/copilot-gauge.js";
 import { initCustomDropdown } from "/src/utils/customDropdown.js";
+import { calcAdScores } from "/src/utils/scoreCalculator.js";
 
 /*--quill----------------------------------------------------------*/
 const quillOptions = {
@@ -234,8 +235,8 @@ const store = reactive({
         { category: 'Laughter', value: 0 },
         { category: 'Shock', value: 0 },
         { category: 'Amazement', value: 0 },
-        { category: 'Sentimental', value: 0 },
-        { category: 'Agitation', value: 0 },
+        { category: 'Sentiment', value: 0 },
+        { category: 'Pull', value: 0 },
         { category: 'Intrigue', value: 0 }
       ],
       direct_response: 0,
@@ -245,7 +246,7 @@ const store = reactive({
         { category: 'Clarity', value: 0 },
         { category: 'Desire', value: 0 },
         { category: 'Value', value: 0 },
-        { category: 'Relevance', value: 0 }
+        { category: 'Concept', value: 0 }
       ],
       suggestions: []
     },
@@ -269,6 +270,14 @@ const store = reactive({
     return effect(() => {
       // Access brief data to track it
       const briefData = JSON.stringify(this.sync);
+      
+      // Calculate scores immediately when copilot radar changes
+      if (this.sync.copilot?.virality_radar && this.sync.copilot?.direct_response_radar) {
+        console.log('[watchBrief] Calculating copilot scores...');
+        calcAdScores(this.sync.copilot);
+        // Update gauge
+        this.updateGauge();
+      }
       
       if (this.watchBriefTimeout) {
         clearTimeout(this.watchBriefTimeout);
@@ -426,6 +435,7 @@ const store = reactive({
 
       // Refresh profiles list from backend
       await store.fetchUserProfiles();
+      store.sync.profile_id = null;
       toast.success('Profile deleted successfully');
     } catch (error) {
       console.error('Error deleting profile:', error);
@@ -490,47 +500,56 @@ const store = reactive({
   },
   // Method to set all radar values to 1 or 2
   setLowRadarValues() {
-    // Create a sample copilot data object with the desired sample values.
-    const sampleCopilotData = {
-      score: 100,
-      avgScore: 1,
-      topScore: 1,
-      virality: 1,
-      virality_radar: [
-        { category: 'Laughter', value: 1 },
-        { category: 'Shock', value: 1 },
-        { category: 'Amazement', value: 1 },
-        { category: 'Sentiment', value: 1 },
-        { category: 'Agitation', value: 1 },
-        { category: 'Intrigue', value: 1 }
-      ],
-      direct_response: 2,
-      direct_response_radar: [
-        { category: 'Urgency', value: 2 },
-        { category: 'Trust', value: 2 },
-        { category: 'Clarity', value: 2 },
-        { category: 'Desire', value: 2 },
-        { category: 'Value', value: 2 },
-        { category: 'Relevance', value: 2 }
-      ],
-      suggestions: []
-    };
+    console.log('[setLowRadarValues] Setting low values');
+    
+    // Create new arrays with updated values
+    this.sync.copilot.virality_radar = this.sync.copilot.virality_radar.map(item => ({
+      ...item,
+      value: 1
+    }));
+    
+    this.sync.copilot.direct_response_radar = this.sync.copilot.direct_response_radar.map(item => ({
+      ...item,
+      value: 2
+    }));
+    
+    console.log('[setLowRadarValues] Values updated');
   
-    // Update both reactive properties to ensure consistency.
-    this.sync.copilot = sampleCopilotData;
-    this.dataToSync.copilot = sampleCopilotData;
-  
-    // Update gauge and radar charts after a short delay.
+    // Update radar charts after a short delay
     setTimeout(() => {
-      // Reinitialize radar charts with the new sample values.
       initRadarCharts(
         this.sync.copilot.virality_radar,
         this.sync.copilot.direct_response_radar
       );
-      // Update the gauge chart.
-      this.updateGauge();
     }, 100);
   },
+
+    // Method to set all radar values to 5
+  setHighRadarValues() {
+    console.log('[setHighRadarValues] Setting high values');
+    
+    // Create new arrays with updated values
+    this.sync.copilot.virality_radar = this.sync.copilot.virality_radar.map(item => ({
+      ...item,
+      value: 5
+    }));
+    
+    this.sync.copilot.direct_response_radar = this.sync.copilot.direct_response_radar.map(item => ({
+      ...item,
+      value: 5
+    }));
+    
+    console.log('[setHighRadarValues] Values updated');
+  
+    // Update radar charts after a short delay
+    setTimeout(() => {
+      initRadarCharts(
+        this.sync.copilot.virality_radar,
+        this.sync.copilot.direct_response_radar
+      );
+    }, 100);
+  },
+
   timeEditing: {
     sectionIndex: null,
     isEndTime: false
@@ -1158,6 +1177,15 @@ const app = createApp({
     return logout(store);
   },
   debugStore,
+  calculateScores() {
+    if (!store.sync.copilot) return { virality: 0, direct_response: 0, score: 0 };
+    
+    const scores = calcAdScores(store.sync.copilot);
+     console.log('Scores calculated:', scores);
+    if (store.updateGauge) store.updateGauge();
+    
+    return scores;
+  },
   handleStatusClick(status) {
     Object.assign(store.sync, { status });
   },
@@ -1191,7 +1219,7 @@ const app = createApp({
     }
   },
   mounted() {
-    // Initialize both watchers
+    // Initialize watchers
     initCustomDropdown();
     
     console.log('Mounting component...');

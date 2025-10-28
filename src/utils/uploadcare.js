@@ -1,5 +1,5 @@
 // Set public key globally
-window.UPLOADCARE_PUBLIC_KEY = 'cdf8f29ff35c6292f1f0';
+window.UPLOADCARE_PUBLIC_KEY = 'e18474bd9df3066f9b68';
 
 // Import the File Uploader dynamically
 const loadFileUploader = () => {
