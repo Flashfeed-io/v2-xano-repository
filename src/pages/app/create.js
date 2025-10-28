@@ -1225,6 +1225,22 @@ const app = createApp({
       $el.style.setProperty('--text-length', text.length + 1);
     }
   },
+  getScoreColor(value) {
+    // Convert to integer if it's a string
+    const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
+    
+    // Handle invalid values
+    if (isNaN(numValue)) return '#f25455';
+    
+    // Return color based on value (0-100 scale)
+    if (numValue <= 50) {
+      return '#f25455'; // Red (0-50)
+    } else if (numValue > 50 && numValue <= 75) {
+      return '#fe8f57'; // Orange (51-75)
+    } else {
+      return '#30c454'; // Green (76-100)
+    }
+  },
   updateCheckboxStyle(event) {
     console.log('Checkbox state changed:', event);
     // Get the checkbox input element
