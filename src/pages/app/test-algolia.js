@@ -5,8 +5,8 @@ import 'instantsearch.css/themes/satellite-min.css';
 
 // Initialize the Algolia client
 const searchClient = algoliasearch(
-  'JPENBJBFVG',
-  'e52c4e233b34d3a2adc1dea827d0a9cf'
+  'CZ13W7HFT4',
+  '049015a3cf5e98d32ebed63d7aa83b10'
 );
 
 const Search = () => {

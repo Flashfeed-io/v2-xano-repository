@@ -1,4 +1,9 @@
 // Custom Dropdown Implementation
+// Track if we've already initialized to prevent duplicate listeners
+let isInitialized = false;
+let documentClickHandler = null;
+let activeDropdown = null;
+
 export const initCustomDropdown = () => {
   console.log('[DEBUG] Starting custom dropdown initialization');
   
@@ -15,11 +20,14 @@ export const initCustomDropdown = () => {
       return;
     }
 
-    // Track active dropdown
-    let activeDropdown = null;
+    // Remove old document click handler if it exists
+    if (documentClickHandler) {
+      document.removeEventListener('click', documentClickHandler);
+      console.log('[DEBUG] Removed old document click handler');
+    }
 
     // Single document click handler for all dropdowns
-    const documentClickHandler = (e) => {
+    documentClickHandler = (e) => {
       console.log('[DEBUG] Document click - Target:', e.target);
       console.log('[DEBUG] Document click - Target classes:', e.target.className);
       console.log('[DEBUG] Document click - Target parent:', e.target.parentElement);
@@ -76,6 +84,15 @@ export const initCustomDropdown = () => {
 
     // Initialize each dropdown set
     dropdownSets.forEach((dropdownButton, index) => {
+      // Skip if already initialized (check for data attribute)
+      if (dropdownButton.hasAttribute('data-dropdown-initialized')) {
+        console.log(`[DEBUG] Dropdown ${index} already initialized, skipping`);
+        return;
+      }
+      
+      // Mark as initialized
+      dropdownButton.setAttribute('data-dropdown-initialized', 'true');
+      
       // Find related elements within the closest common parent
       const dropdownButtonWrap = dropdownButton.closest('[cc_data="dropdown-button-wrap"]');
       const dropdownList = dropdownButtonWrap?.querySelector('.cc_option-dropdown__list-custom');
@@ -162,10 +179,16 @@ export const initCustomDropdown = () => {
         e.preventDefault();  // Prevent any default behavior
         e.stopPropagation(); // Stop event from bubbling up
         toggleDropdown();
-      });
+      }, { once: false }); // Don't use once:true as we want multiple clicks
 
       // Handle clicks inside the dropdown list
       dropdownList.querySelectorAll('.cc_dropdown__list-item').forEach(item => {
+        // Skip if already has listener
+        if (item.hasAttribute('data-listener-attached')) {
+          return;
+        }
+        item.setAttribute('data-listener-attached', 'true');
+        
         item.addEventListener('click', (e) => {
           console.log('[DEBUG] List item clicked:', e.target);
           console.log('[DEBUG] List item classes:', e.target.className);
@@ -189,6 +212,12 @@ export const initCustomDropdown = () => {
 
       // Handle text/input elements
       dropdownList.querySelectorAll('.form-field-inline-board, .cc_board-name').forEach(element => {
+        // Skip if already has listener
+        if (element.hasAttribute('data-listener-attached')) {
+          return;
+        }
+        element.setAttribute('data-listener-attached', 'true');
+        
         element.addEventListener('click', (e) => {
           e.stopPropagation();
           console.log('[DEBUG] Clicked board name element:', e.target);
@@ -196,6 +225,15 @@ export const initCustomDropdown = () => {
       });
     });
 
+    isInitialized = true;
     console.log('[DEBUG] Custom dropdown initialization complete');
   }, 100); // Initial 100ms delay to ensure DOM is ready
+};
+
+// Export a function to reinitialize dropdowns (useful for dynamic content)
+export const reinitCustomDropdown = () => {
+  console.log('[DEBUG] Reinitializing custom dropdowns for new content');
+  // Don't reset isInitialized, just call init again
+  // The data attributes will prevent duplicate listeners
+  initCustomDropdown();
 };

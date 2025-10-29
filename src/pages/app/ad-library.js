@@ -4,7 +4,7 @@ import { WebflowFormComponent } from "@/components/WebflowFormComponent.js";
 import { toast } from "@/utils/toastManager.js";
 import { getUserData, logout, verifyAuth } from "@/utils/userData.js";
 import { injectStyles } from "@/utils/injectStyles.js";
-import { initCustomDropdown } from "@/utils/customDropdown.js";
+import { initCustomDropdown, reinitCustomDropdown } from "@/utils/customDropdown.js";
 import { getHeaders } from "@/utils/constants.js";
 
 // Debounce utility
@@ -441,7 +441,7 @@ window.addEventListener("DOMContentLoaded", () => {
   injectStyles();
 
   // Check if required containers exist
-  const requiredContainers = ['#clear-refinements', '#searchbox', '#hits', '#poweredBy', '#refinement-industry'];
+  const requiredContainers = ['#clear-refinements', '#searchbox', '#hits', '#poweredBy', '#refinement-industry', '#refinement-scores', '#refinement-genre'];
   const missingContainers = requiredContainers.filter(selector => !document.querySelector(selector));
   if (missingContainers.length > 0) {
     console.error('[DEBUG] Missing containers:', missingContainers);
@@ -450,8 +450,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // establish connection to search index with application ID and public api key from algolia
   const searchClient = algoliasearch(
-    "JPENBJBFVG",
-    "e52c4e233b34d3a2adc1dea827d0a9cf"
+    "CZ13W7HFT4",
+    "049015a3cf5e98d32ebed63d7aa83b10"
   );
 
   const search = instantsearch({
@@ -489,13 +489,13 @@ window.addEventListener("DOMContentLoaded", () => {
     }),
     // Genre component
     instantsearch.widgets.refinementList({
-      container: "#refinement-platform",
+      container: "#refinement-genre",
       attribute: "genres",
       cssClasses: {
         root: "ad-library_filter-max-height",
       },
       transformItems(items) {
-        console.log('[DEBUG] Platform refinement items:', items);
+        console.log('[DEBUG] Genre refinement items:', items);
         return items;
       },
       searchable: true,
@@ -528,6 +528,49 @@ window.addEventListener("DOMContentLoaded", () => {
         `,
         noResults: 'No genres found.',
         noRefinementRoot: 'No genres available.'
+      }
+    }),
+    // score_category component
+    instantsearch.widgets.refinementList({
+      container: "#refinement-scores",
+      attribute: "score_category",
+      cssClasses: {
+        root: "ad-library_filter-max-height",
+      },
+      transformItems(items) {
+        console.log('[DEBUG] Score refinement items:', items);
+        return items;
+      },
+      searchable: false,
+      operator: 'or',
+      limit: 10,
+      templates: {
+        item: `
+          <label class="w-checkbox form-checkbox">
+            <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
+            <input type="checkbox" 
+              style="opacity:0;position:absolute;z-index:-1" 
+              value="{{label}}" 
+              {{#isRefined}}checked{{/isRefined}}
+              onclick="
+                const originalEvent = event;
+                event.stopPropagation();
+                setTimeout(() => {
+                  // Create and dispatch a new click event after Algolia processes
+                  const newEvent = new MouseEvent('click', {
+                    bubbles: false,
+                    cancelable: true,
+                    view: window
+                  });
+                  originalEvent.target.dispatchEvent(newEvent);
+                }, 10);
+              "
+            />
+            <span class="form-checkbox-label w-form-label text-capitalize-first">{{label}}</span>
+          </label>
+        `,
+        noResults: 'No scores found.',
+        noRefinementRoot: 'No scores available.'
       }
     }),
     // Industry component
@@ -688,7 +731,8 @@ Promise.all(Array.from(videos).map(video => {
 })).then(() => {
   setTimeout(() => {
     console.log(app.mount())
-    initCustomDropdown();
+    // Reinitialize dropdowns for newly rendered content
+    reinitCustomDropdown();
   }, 100);
   console.log('[DEBUG] All videos loaded, initializing masonry');
   const msnry = new Masonry(hitsList, {
@@ -838,6 +882,7 @@ const app = createApp({
   mounted() {
     // Initialize page-specific functionality
     injectStyles();
+    // Initialize dropdowns once on mount
     initCustomDropdown();
     search.start();
     
