@@ -395,6 +395,30 @@ const store = reactive({
     }
   },
 
+  /**
+   * Sets the current ad details from Algolia hit data for modal display
+   * @param {Object} hit - Algolia hit object containing ad data
+   */
+  setCurrentAdDetails(hit) {
+    this.currentAdDetails = {
+      id: hit.id,
+      video_url: hit.video_url,
+      brand_name: hit.brand_name,
+      brand_image: hit.brand_image,
+      platform: hit.platform,
+      industry: hit.industry,
+      run_time: hit.run_time,
+      purpose: hit.purpose,
+      score: hit.score_category,
+      comments: hit.comments,
+      likes: hit.likes,
+      genres: hit.genres,
+      // Add any other fields you need from the hit
+    };
+    
+    console.log('[DEBUG] Current ad details set:', this.currentAdDetails);
+  },
+
 /**
  * Rewrites an ad using either Algolia hit or modal details
  * @param {Object|null} adData - Algolia hit data (null when called from modal)
@@ -651,7 +675,8 @@ window.addEventListener("DOMContentLoaded", () => {
           console.log('[DEBUG] Hit record:', hit);
 
           return `
-<div class="alg_dashboard-area"><div class="alg_dashboard-block"><div data-w-id="93904b9a-93bb-5831-5365-df4d4a373366" class="launch-ad-details"></div><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-padding is--top"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="${hit.brand_image}" class="alg_brand-image"></div><div class="v-flex-025"><div class="alg_hit-brand-name">${hit.brand_name}</div><div class="div-block-641"><div class="subtext-11">${hit.industry}</div></div></div></div><div class="alg_hit-rating-wrap"><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div cc_score-bar="" class="alg_hit-rating"></div></div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown"><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<div class="alg_dashboard-area"><div class="alg_dashboard-block"><div data-w-id="93904b9a-93bb-5831-5365-df4d4a373366" class="launch-ad-details" // On the element that should trigger the modal (e.g., the video or a details button)
+v-on:click="store.setCurrentAdDetails(${JSON.stringify(hit).replace(/"/g, '&quot;')})"></div><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-padding is--top"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="${hit.brand_image}" class="alg_brand-image"></div><div class="v-flex-025"><div class="alg_hit-brand-name">${hit.brand_name}</div><div class="div-block-641"><div class="subtext-11">${hit.industry}</div></div></div></div><div class="alg_hit-rating-wrap"><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div cc_score-bar="" class="alg_hit-rating"></div></div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown"><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
