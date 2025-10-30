@@ -215,7 +215,6 @@ const store = reactive({
     //main brief info
     id: null,
     uuid: null,
-    ad_id: null,
     profile_id: null, 
     updated_at: new Date().toISOString().split('T')[0],
     title: "",
@@ -225,8 +224,11 @@ const store = reactive({
     description: "",
     //script
     script: [],
-    //imported inspiration list
-    imported_inspiration_list: [],
+    //imported video
+    imported_ad_id: "1",
+    imported_ad_details: {id: "1", script: []},
+    //imported swipefeed
+    swipefeed: [{id: "1"}, {id: "2"}, {id: "3"}],
     //copilot
     copilot: {
       score: 0,

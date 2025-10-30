@@ -465,7 +465,7 @@ window.addEventListener("DOMContentLoaded", () => {
   injectStyles();
 
   // Check if required containers exist
-  const requiredContainers = ['#clear-refinements', '#searchbox', '#hits', '#poweredBy', '#refinement-industry', '#refinement-scores', '#refinement-genre'];
+  const requiredContainers = ['#clear-refinements', '#searchbox', '#hits', '#poweredBy', '#refinement-industry', '#refinement-scores', '#refinement-genre', '#refinement-language', '#refinement-platform', '#refinement-purpose'];
   const missingContainers = requiredContainers.filter(selector => !document.querySelector(selector));
   if (missingContainers.length > 0) {
     console.error('[DEBUG] Missing containers:', missingContainers);
@@ -509,6 +509,135 @@ window.addEventListener("DOMContentLoaded", () => {
           console.log('[DEBUG] Hit record:', hit);
           return `<div>${JSON.stringify(hit)}</div>`;
         }
+      }
+    }),
+    // Language component
+    instantsearch.widgets.refinementList({
+      container: "#refinement-language",
+      attribute: "language",
+      cssClasses: {
+        root: "ad-library_filter-max-height",
+      },
+      transformItems(items) {
+        console.log('[DEBUG] Language refinement items:', items);
+        return items;
+      },
+      searchable: true,
+      operator: 'or',
+      limit: 10,
+      templates: {
+        item: `
+          <label class="w-checkbox form-checkbox">
+            <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
+            <input type="checkbox" 
+              style="opacity:0;position:absolute;z-index:-1" 
+              value="{{label}}" 
+              {{#isRefined}}checked{{/isRefined}}
+              onclick="
+                const originalEvent = event;
+                event.stopPropagation();
+                setTimeout(() => {
+                  // Create and dispatch a new click event after Algolia processes
+                  const newEvent = new MouseEvent('click', {
+                    bubbles: false,
+                    cancelable: true,
+                    view: window
+                  });
+                  originalEvent.target.dispatchEvent(newEvent);
+                }, 10);
+              "
+            />
+            <span class="form-checkbox-label w-form-label text-capitalize-first">{{label}}</span>
+          </label>
+        `,
+        noResults: 'No languages found.',
+        noRefinementRoot: 'No languages available.'
+      }
+    }),
+    // Platform component
+    instantsearch.widgets.refinementList({
+      container: "#refinement-platform",
+      attribute: "platform",
+      cssClasses: {
+        root: "ad-library_filter-max-height",
+      },
+      transformItems(items) {
+        console.log('[DEBUG] Platform refinement items:', items);
+        return items;
+      },
+      searchable: false,
+      operator: 'or',
+      limit: 10,
+      templates: {
+        item: `
+          <label class="w-checkbox form-checkbox">
+            <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
+            <input type="checkbox" 
+              style="opacity:0;position:absolute;z-index:-1" 
+              value="{{label}}" 
+              {{#isRefined}}checked{{/isRefined}}
+              onclick="
+                const originalEvent = event;
+                event.stopPropagation();
+                setTimeout(() => {
+                  // Create and dispatch a new click event after Algolia processes
+                  const newEvent = new MouseEvent('click', {
+                    bubbles: false,
+                    cancelable: true,
+                    view: window
+                  });
+                  originalEvent.target.dispatchEvent(newEvent);
+                }, 10);
+              "
+            />
+            <span class="form-checkbox-label w-form-label text-capitalize-first">{{label}}</span>
+          </label>
+        `,
+        noResults: 'No platforms found.',
+        noRefinementRoot: 'No platforms available.'
+      }
+    }),
+    // Purpose component
+    instantsearch.widgets.refinementList({
+      container: "#refinement-purpose",
+      attribute: "purpose",
+      cssClasses: {
+        root: "ad-library_filter-max-height",
+      },
+      transformItems(items) {
+        console.log('[DEBUG] Purpose refinement items:', items);
+        return items;
+      },
+      searchable: false,
+      operator: 'or',
+      limit: 10,
+      templates: {
+        item: `
+          <label class="w-checkbox form-checkbox">
+            <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox-square{{#isRefined}} w--redirected-checked{{/isRefined}}"></div>
+            <input type="checkbox" 
+              style="opacity:0;position:absolute;z-index:-1" 
+              value="{{label}}" 
+              {{#isRefined}}checked{{/isRefined}}
+              onclick="
+                const originalEvent = event;
+                event.stopPropagation();
+                setTimeout(() => {
+                  // Create and dispatch a new click event after Algolia processes
+                  const newEvent = new MouseEvent('click', {
+                    bubbles: false,
+                    cancelable: true,
+                    view: window
+                  });
+                  originalEvent.target.dispatchEvent(newEvent);
+                }, 10);
+              "
+            />
+            <span class="form-checkbox-label w-form-label text-capitalize-first">{{label}}</span>
+          </label>
+        `,
+        noResults: 'No purposes found.',
+        noRefinementRoot: 'No purposes available.'
       }
     }),
     // Genre component
@@ -674,9 +803,28 @@ window.addEventListener("DOMContentLoaded", () => {
         item: (hit) => {
           console.log('[DEBUG] Hit record:', hit);
 
+          // Helper function to get score bar configuration
+          const getScoreConfig = (scoreCategory) => {
+            const configs = {
+              'Legendary': { count: 4, color: '#00e1ff' }, // Blue
+              'High': { count: 3, color: '#30C455' },      // Green
+              'Average': { count: 2, color: '#FD9059' },   // Orange
+              'Low': { count: 1, color: '#F35353' }        // Red
+            };
+            return configs[scoreCategory] || { count: 0, color: '#dee0ea' };
+          };
+
+          const scoreConfig = getScoreConfig(hit.score_category);
+          const scoreBars = Array.from({ length: 4 }, (_, i) => {
+            // Reverse the index so bars fill from bottom to top
+            const reverseIndex = 3 - i;
+            const isActive = reverseIndex < scoreConfig.count;
+            return `<div class="alg_hit-rating" style="background-color: ${isActive ? scoreConfig.color : '#E5E7EB'}"></div>`;
+          }).join('');
+
           return `
 <div class="alg_dashboard-area"><div class="alg_dashboard-block"><div data-w-id="93904b9a-93bb-5831-5365-df4d4a373366" class="launch-ad-details" // On the element that should trigger the modal (e.g., the video or a details button)
-v-on:click="store.setCurrentAdDetails(${JSON.stringify(hit).replace(/"/g, '&quot;')})"></div><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-padding is--top"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="${hit.brand_image}" class="alg_brand-image"></div><div class="v-flex-025"><div class="alg_hit-brand-name">${hit.brand_name}</div><div class="div-block-641"><div class="subtext-11">${hit.industry}</div></div></div></div><div class="alg_hit-rating-wrap"><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div class="alg_hit-rating"></div><div cc_score-bar="" class="alg_hit-rating"></div></div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown"><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+v-on:click="store.setCurrentAdDetails(${JSON.stringify(hit).replace(/"/g, '&quot;')})"></div><div class="alg_ad-library_hit-padding"><div class="alg_ad-library_hit-padding is--top"><div class="alg_ad-library_hit-top"><div class="alg_hit-brand"><div class="alg_hit-brand-image-wrap"><img src="${hit.brand_image}" class="alg_brand-image"></div><div class="v-flex-025"><div class="alg_hit-brand-name">${hit.brand_name}</div><div class="div-block-641"><div class="subtext-11">${hit.industry}</div></div></div></div><div class="alg_hit-rating-wrap">${scoreBars}</div><div data-hover="false" data-delay="0" class="alg_hit-dropdown w-dropdown"><div class="alg_hit-dropdown-toggle w-dropdown-toggle" id="w-dropdown-toggle-0" aria-controls="w-dropdown-list-0" aria-haspopup="menu" aria-expanded="false" role="button" tabindex="0"><div class="icon-18 w-embed"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M19 13C19.5523 13 20 12.5523 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.5523 18.4477 13 19 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
 <path d="M5 13C5.55228 13 6 12.5523 6 12C6 11.4477 5.55228 11 5 11C4.44772 11 4 11.4477 4 12C4 12.5523 4.44772 13 5 13Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
